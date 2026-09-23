@@ -289,6 +289,7 @@ function bubble(role,text){
   by.textContent=role==="user"?"YOU":"PLQNX CORE";
   const content=document.createElement("div");
   if(role==="model"&&text!=="Thinking…")formatAnswer(content,text);
+  else if(role==="model"){const dots=document.createElement("span");dots.className="thinking-dots";dots.textContent="Thinking";dots.setAttribute("aria-label","PLQNX CORE is thinking");content.append(dots)}
   else content.textContent=text;
   wrapper.append(by,content);
   if(role==="model" && text!=="Thinking…"){
@@ -396,6 +397,12 @@ el("chatForm").addEventListener("submit",async event=>{
     await loadList();
   }catch(error){
     waiting.classList.remove("thinking");waiting.querySelector("div:nth-child(2)").textContent="Unable to reply: "+error.message;
+    const restore=document.createElement("button");restore.type="button";restore.className="copy-response";
+    restore.textContent="Restore my message";
+    restore.addEventListener("click",()=>{
+      el("prompt").value=message;resizePrompt();el("prompt").focus();restore.remove();
+    });
+    waiting.append(restore);
     status("Message failed. Try again.");
   }finally{busy=false;el("send").disabled=false;el("prompt").focus()}
 });
