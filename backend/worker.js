@@ -88,6 +88,13 @@ export default {
     const answer=(data.candidates?.[0]?.content?.parts||[])
       .filter(part=>typeof part.text==="string").map(part=>part.text).join("").trim();
     if (!answer) return json({error:"No text response was returned."},502,origin);
-    return json({answer:answer.slice(0,8000)},200,origin);
+    return json({
+      answer: answer.slice(0,8000),
+      diagnostic: {
+        version: "memory-v2",
+        priorTurnsReceived: history.length,
+        priorExchangesReceived: history.length / 2
+      }
+    },200,origin);
   }
 };
