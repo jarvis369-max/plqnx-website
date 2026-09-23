@@ -18,6 +18,15 @@ aside{background:#091c2cd9;border-right:1px solid var(--line);padding:24px 16px;
 .small{color:var(--muted);font-size:12px}
 .search{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#102b40db;color:var(--white);outline:none}
 .search:focus{border-color:var(--cyan)}
+.formatted{white-space:normal;line-height:1.68;overflow-wrap:anywhere}
+.formatted p{margin:0 0 12px}.formatted p:last-child{margin-bottom:0}
+.formatted h2,.formatted h3{line-height:1.28;margin:13px 0 8px}.formatted h2{font-size:18px}.formatted h3{font-size:15px}
+.formatted ul{margin:8px 0 13px;padding-left:22px}.formatted li{margin:4px 0}
+.formatted pre{background:#071625;border:1px solid #83dfff45;border-radius:12px;padding:13px;overflow-x:auto;white-space:pre;max-width:100%;font:12px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace}
+.formatted code{padding:2px 5px;border-radius:5px;background:#071625;color:#a8eeff;font:12px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace}
+.formatted pre code{background:none;padding:0}.formatted strong{color:#fff}.formatted em{color:#b6dfff}
+.codebar{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#b4d7ed;font:11px ui-monospace,monospace;margin:-2px 0 7px}.codebar button{border:1px solid #79ddff75;background:#1a455f;color:#d5f6ff;border-radius:7px;padding:4px 9px;font:11px system-ui}
+.sidebar-toggle{display:none}
 .copy-response{margin-top:12px;display:inline-flex;align-items:center;gap:6px;border:1px solid #8de7ff4a;color:var(--cyan);background:#102b409a;border-radius:9px;padding:5px 10px;font-size:11px;cursor:pointer}
 .empty-list{color:var(--muted);padding:12px;font-size:12px}
 .aside-bottom{margin-top:auto;display:grid;gap:8px}
@@ -27,14 +36,24 @@ h1{font-size:18px;margin:0}.subtitle{color:var(--muted);font-size:11px}.feed{ove
 .composer{padding:14px max(15px,calc((100% - 900px)/2));border-top:1px solid var(--line);display:flex;gap:10px;align-items:center;background:#0b1e31ba}.composer textarea{flex:1;min-width:0;resize:vertical;max-height:170px;min-height:55px;border:1px solid var(--line);border-radius:16px;background:#102b40db;color:var(--white);padding:15px;outline:none}.composer textarea:focus,input:focus{border-color:#8eeaff}
 .footer-note{padding:4px 16px 11px;text-align:center;color:var(--muted);font-size:10px}
 .overlay{position:fixed;inset:0;z-index:30;background:#020915dc;display:flex;align-items:center;justify-content:center;padding:20px}.auth{width:min(440px,100%);border:1px solid #89e4ff70;background:#0b2239f5;box-shadow:0 15px 90px #0008;border-radius:24px;padding:28px;display:grid;gap:15px}.auth h2{margin:0;font-size:25px}.auth p{margin:0;color:var(--muted);font-size:13px}label{display:grid;gap:5px;color:#cbe8f5;font-size:13px}input{width:100%;border:1px solid var(--line);background:#092032;color:var(--white);padding:12px;border-radius:10px;outline:none}.switch{background:none;border:0;color:var(--cyan);text-decoration:underline;padding:8px}.error{color:#ffb8bf;font-size:12px}.notice{font-size:12px;color:#a5bdcb}
-@media(max-width:730px){.layout{grid-template-columns:1fr}.layout aside{height:auto;padding:12px 15px}.list{max-height:95px}.aside-bottom{display:none}main{height:calc(100dvh - 185px)}.top{padding:10px 16px}.message{max-width:100%}}
+@media(max-width:730px){
+.layout{grid-template-columns:1fr}.layout aside{position:fixed;inset:0 auto 0 0;width:min(310px,87vw);z-index:20;transform:translateX(-102%);transition:transform .24s ease;box-shadow:12px 0 48px #0007}
+.layout aside.open{transform:translateX(0)}.sidebar-toggle{display:inline-flex}
+.list{max-height:none;flex:1}.aside-bottom{display:grid}
+main{height:100dvh}.top{padding:10px 12px}.top h1{font-size:15px}
+.feed{padding:16px 12px}.message{max-width:96%;padding:12px}
+.composer{padding:10px 12px}.footer-note{font-size:9px;padding:4px 12px 9px}
+#username{display:none}#deleteChat{font-size:11px;padding:8px 10px}
+}
+@media(prefers-reduced-motion:reduce){.layout aside{transition:none}}
 @media(prefers-reduced-motion:reduce){.orb{animation:none}}
 </style>
 </head>
 <body>
 <div class="layout">
+  <button id="drawerBackdrop" class="hidden" type="button" aria-label="Close conversation menu" style="position:fixed;inset:0;background:#020813bb;border:0;z-index:19"></button>
   <aside>
-    <a class="brand" href="./">PL<b>QNX</b></a>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><a class="brand" href="./">PL<b>QNX</b></a><button class="btn sidebar-toggle" type="button" id="closeSidebar" aria-label="Close menu">✕</button></div>
     <div class="label">CORE · SAVED CONVERSATIONS</div>
     <button class="btn primary" id="newChat" type="button">＋ New conversation</button>
     <input class="search" id="chatSearch" type="search" placeholder="Search saved chats…" aria-label="Search saved conversations" autocomplete="off">
@@ -42,7 +61,7 @@ h1{font-size:18px;margin:0}.subtitle{color:var(--muted);font-size:11px}.feed{ove
     <div class="aside-bottom"><div class="small">Private beta · Up to 25 requests per user per day. Never send sensitive information.</div><button class="btn" id="logout" type="button">Sign out</button></div>
   </aside>
   <main>
-    <div class="top"><div><h1 id="chatTitle">PLQNX CORE</h1><div class="subtitle" id="status" aria-live="polite">Checking backend…</div></div><div><span class="small" id="username"></span> <button class="btn danger hidden" id="deleteChat" type="button">Delete chat</button></div></div>
+    <div class="top"><button class="btn sidebar-toggle" id="openSidebar" type="button" aria-label="Open saved conversations" aria-expanded="false">☰</button><div style="flex:1;min-width:0"><h1 id="chatTitle">PLQNX CORE</h1><div class="subtitle" id="status" aria-live="polite">Checking backend…</div></div><div><span class="small" id="username"></span> <button class="btn danger hidden" id="deleteChat" type="button">Delete chat</button></div></div>
     <div class="feed" id="feed" aria-live="polite"><div class="welcome" id="welcome"><div class="orb"></div><h2>From the smallest to the infinite.</h2><p>Private beta with saved chats. Sign in to begin.</p></div></div>
     <form class="composer" id="chatForm"><textarea id="prompt" placeholder="Ask PLQNX CORE anything…" maxlength="1000" rows="2" required></textarea><button class="btn primary" id="send" type="submit">Send ↗</button></form>
     <div class="footer-note">PLQNX is an early-stage AI project. Responses may be inaccurate. Messages are processed by Cloudflare and Google Gemini.</div>
@@ -72,6 +91,12 @@ let access=sessionStorage.getItem("plqnx_v3_token")||"";
 let name=sessionStorage.getItem("plqnx_v3_name")||"";
 let current="",mode="login",busy=false,convos=[];
 const status=t=>el("status").textContent=t;
+function openDrawer(){el("drawerBackdrop").classList.remove("hidden");el("openSidebar").setAttribute("aria-expanded","true");document.querySelector("aside").classList.add("open")}
+function closeDrawer(){el("drawerBackdrop").classList.add("hidden");el("openSidebar").setAttribute("aria-expanded","false");document.querySelector("aside").classList.remove("open")}
+el("openSidebar").addEventListener("click",openDrawer);
+el("closeSidebar").addEventListener("click",closeDrawer);
+el("drawerBackdrop").addEventListener("click",closeDrawer);
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeDrawer()});
 function showError(t){el("authError").textContent=t}
 async function call(path,method="GET",body,invitation){
   const headers={"Content-Type":"application/json"};
@@ -104,13 +129,82 @@ function welcome(text){
   const p=document.createElement("p");p.textContent=text;
   block.append(orb,title,p);feed.append(block);
 }
+// Render a small, deliberately restricted Markdown subset with DOM nodes only.
+// No innerHTML, executable HTML, external links, images or arbitrary attributes.
+function formatInline(target,text){
+  const pattern=/(`[^`\n]+`|\\*\\*[^*\n]+\\*\\*|\\*[^*\n]+\\*)/g;
+  let start=0;
+  for(const match of text.matchAll(pattern)){
+    if(match.index>start)target.append(document.createTextNode(text.slice(start,match.index)));
+    const raw=match[0];let node;
+    if(raw.startsWith("`")){node=document.createElement("code");node.textContent=raw.slice(1,-1)}
+    else if(raw.startsWith("**")){node=document.createElement("strong");node.textContent=raw.slice(2,-2)}
+    else{node=document.createElement("em");node.textContent=raw.slice(1,-1)}
+    target.append(node);start=match.index+raw.length;
+  }
+  if(start<text.length)target.append(document.createTextNode(text.slice(start)));
+}
+function formatAnswer(target,text){
+  target.classList.add("formatted");target.replaceChildren();
+  const normalized=text.replace(/\r\n?/g,"\n");
+  const sections=normalized.split(/(```[\s\S]*?```)/g);
+  function renderText(section){
+    const lines=section.split("\n");let paragraph=[],items=[];
+    function flushParagraph(){
+      if(!paragraph.length)return;
+      const p=document.createElement("p");formatInline(p,paragraph.join(" "));
+      target.append(p);paragraph=[];
+    }
+    function flushItems(){
+      if(!items.length)return;
+      const list=document.createElement("ul");
+      for(const item of items){const li=document.createElement("li");formatInline(li,item);list.append(li)}
+      target.append(list);items=[];
+    }
+    for(const line of lines){
+      const t=line.trim();
+      if(!t){flushParagraph();flushItems();continue}
+      const heading=t.match(/^(#{1,3})\s+(.+)$/);
+      if(heading){
+        flushParagraph();flushItems();
+        const h=document.createElement(heading[1].length===1?"h2":"h3");
+        formatInline(h,heading[2]);target.append(h);continue;
+      }
+      const bullet=t.match(/^[-*]\s+(.+)$/);
+      if(bullet){flushParagraph();items.push(bullet[1]);continue}
+      flushItems();paragraph.push(t);
+    }
+    flushParagraph();flushItems();
+  }
+  for(const section of sections){
+    if(section.startsWith("```")&&section.endsWith("```")){
+      const lines=section.slice(3,-3).replace(/^\n/,"").split("\n");
+      const language=lines[0].trim();
+      const langIsLabel=/^[a-zA-Z0-9+#.-]{1,25}$/.test(language);
+      const code=langIsLabel?lines.slice(1).join("\n"):lines.join("\n");
+      const outer=document.createElement("div"),bar=document.createElement("div");
+      bar.className="codebar";
+      const label=document.createElement("span");label.textContent=langIsLabel?language:"Code";
+      const copy=document.createElement("button");copy.type="button";copy.textContent="Copy code";
+      copy.addEventListener("click",async()=>{
+        try{await navigator.clipboard.writeText(code);copy.textContent="Copied ✓"}
+        catch{copy.textContent="Copy unavailable"}
+      });
+      bar.append(label,copy);
+      const pre=document.createElement("pre"),c=document.createElement("code");c.textContent=code;
+      pre.append(c);outer.append(bar,pre);target.append(outer);
+    }else renderText(section);
+  }
+}
 function bubble(role,text){
   if(el("welcome"))el("welcome").remove();
   const wrapper=document.createElement("article");
   wrapper.className="message"+(role==="user"?" mine":"");
   const by=document.createElement("div");by.className="by";
   by.textContent=role==="user"?"YOU":"PLQNX CORE";
-  const content=document.createElement("div");content.textContent=text;
+  const content=document.createElement("div");
+  if(role==="model"&&text!=="Thinking…")formatAnswer(content,text);
+  else content.textContent=text;
   wrapper.append(by,content);
   if(role==="model" && text!=="Thinking…"){
     const copy=document.createElement("button");copy.type="button";copy.className="copy-response";
@@ -136,7 +230,7 @@ function renderList(){
     const button=document.createElement("button");button.type="button";
     button.className="conversation"+(c.id===current?" active":"");
     const span=document.createElement("span");span.textContent=c.title;
-    button.append(span);button.addEventListener("click",()=>openChat(c.id));
+    button.append(span);button.addEventListener("click",()=>{closeDrawer();openChat(c.id)});
     el("conversations").append(button);
   }
 }
@@ -204,7 +298,7 @@ el("chatForm").addEventListener("submit",async event=>{
   try{
     if(!current){const c=await call("/v1/conversations","POST",{title:"New chat"});current=c.id}
     const data=await call("/v1/chat","POST",{conversationId:current,message});
-    waiting.querySelector("div:last-child").textContent=data.answer;
+    formatAnswer(waiting.querySelector("div:nth-child(2)"),data.answer);
     const copy=document.createElement("button");copy.type="button";copy.className="copy-response";
     copy.textContent="Copy response";
     copy.addEventListener("click",async()=>{
@@ -219,7 +313,7 @@ el("chatForm").addEventListener("submit",async event=>{
     status("Message failed. Try again.");
   }finally{busy=false;el("send").disabled=false;el("prompt").focus()}
 });
-el("newChat").addEventListener("click",newChat);
+el("newChat").addEventListener("click",()=>{closeDrawer();newChat()});
 el("chatSearch").addEventListener("input",renderList);
 el("deleteChat").addEventListener("click",async()=>{
   if(!current||busy||!confirm("Permanently delete this conversation?"))return;
