@@ -35,17 +35,24 @@ actions.appendChild(newChat);
 let history=[]; // Stored only in memory for this open page, not in localStorage.
 newChat.addEventListener('click',()=>{
   history=[];
+  status.textContent='MEMORY RESET · 0 PRIOR EXCHANGES';
   const messages=document.getElementById('messages');
   messages.replaceChildren();
   bubble('New conversation started. Previous messages have been cleared from this page.');
 });
 const subtitle=header.querySelector('div div');const notice=dialog.querySelector('.smallprint');
+const status=document.createElement('div');
+status.id='memoryStatus';status.style.cssText='padding:5px 18px;color:#9ddffd;font-size:10px;letter-spacing:.05em;border-bottom:1px solid #83dfff2a';
+status.textContent='MEMORY DIAGNOSTIC · SEND A MESSAGE TO CHECK';
+const messages=document.getElementById('messages');
+messages.parentNode.insertBefore(status,messages);
 let endpoint=localStorage.getItem('plqnx_beta_endpoint')||'';
 let betaCode=sessionStorage.getItem('plqnx_beta_code')||'';
 const render=()=>{
   let live=Boolean(endpoint&&betaCode);
   connect.textContent=live?'Disconnect beta':'Connect live beta';
   subtitle.textContent=live?'PRIVATE GEMINI BETA · LIVE AI':'SCRIPTED PROTOTYPE · NOT LIVE AI';
+  status.textContent=live?'MEMORY DIAGNOSTIC · SEND A MESSAGE TO CHECK':'SCRIPTED DEMO · MEMORY NOT ACTIVE';
   notice.textContent=live
     ?'Private beta: messages are processed by Cloudflare and Google Gemini. Do not share sensitive information.'
     :'Demo only. No messages are sent to a server or saved by this page.';
@@ -91,6 +98,12 @@ form.addEventListener('submit',async e=>{
       history.push({role:'user',text:message},{role:'model',text:answer.slice(0,1000)});
       history=history.slice(-12);
       bubble(answer);
+      const report=data.diagnostic;
+      if(report && report.version === 'memory-v2') {
+        status.textContent='MEMORY ACTIVE · '+report.priorExchangesReceived+' PRIOR EXCHANGES RECEIVED';
+      } else {
+        status.textContent='OLD BACKEND DETECTED · REDEPLOY WORKER FOR MEMORY';
+      }
     } else {
       bubble(data.error||'Something went wrong. Try again.');
     }
