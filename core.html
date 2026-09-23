@@ -132,7 +132,7 @@ function welcome(text){
 // Render a small, deliberately restricted Markdown subset with DOM nodes only.
 // No innerHTML, executable HTML, external links, images or arbitrary attributes.
 function formatInline(target,text){
-  const pattern=/(`[^`\n]+`|\\*\\*[^*\n]+\\*\\*|\\*[^*\n]+\\*)/g;
+  const pattern=/(`[^`\n]+`|\*\*[^*\n]+\*\*|\*[^*\n]+\*)/g;
   let start=0;
   for(const match of text.matchAll(pattern)){
     if(match.index>start)target.append(document.createTextNode(text.slice(start,match.index)));
@@ -210,7 +210,7 @@ function bubble(role,text){
     const copy=document.createElement("button");copy.type="button";copy.className="copy-response";
     copy.textContent="Copy response";copy.setAttribute("aria-label","Copy AI response");
     copy.addEventListener("click",async()=>{
-      try{await navigator.clipboard.writeText(content.textContent);copy.textContent="Copied ✓";}
+      try{await navigator.clipboard.writeText(text);copy.textContent="Copied ✓";}
       catch{copy.textContent="Copy unavailable";}
     });wrapper.append(copy);
   }
