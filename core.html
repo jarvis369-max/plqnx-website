@@ -91,6 +91,21 @@ aside{background:#fffefaeF;border-color:#eae5dd;box-shadow:9px 0 35px #5148390d}
 .layout aside.open{transform:translateX(0)}
 }
 
+
+/* PLQNX CORE 5.0 polish: soft micro-interactions and responsive composer */
+.message{animation:coreAppear .22s ease-out both}
+@keyframes coreAppear{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.thinking-dots{display:inline-block;color:#806e5b;font-weight:600}
+.thinking-dots:after{content:"";display:inline-block;margin-left:7px;width:5px;height:5px;border-radius:50%;background:#b7a08c;box-shadow:10px 0 #c9b6a5,20px 0 #d6c8b9;animation:corePulse 1.2s infinite}
+@keyframes corePulse{50%{opacity:.3;transform:translateY(-3px)}}
+.composer textarea{resize:none;overflow-y:auto}
+@media(max-width:730px){
+.top{flex-wrap:wrap;row-gap:7px}.top>div:last-child{display:flex;gap:5px}
+.composer{align-items:flex-end;padding-bottom:max(10px,env(safe-area-inset-bottom))}
+.composer textarea{font-size:16px;min-height:48px;padding:12px}
+#send{min-height:48px;padding:11px}
+}
+@media(prefers-reduced-motion:reduce){.message,.thinking-dots:after{animation:none}}
 </style>
 </head>
 <body>
@@ -135,6 +150,11 @@ let access=sessionStorage.getItem("plqnx_v3_token")||"";
 let name=sessionStorage.getItem("plqnx_v3_name")||"";
 let current="",mode="login",busy=false,convos=[];
 const status=t=>el("status").textContent=t;
+function resizePrompt(){
+  const input=el("prompt");input.style.height="auto";
+  input.style.height=Math.min(input.scrollHeight,170)+"px";
+}
+el("prompt").addEventListener("input",resizePrompt);
 function mobileMenu(){return window.matchMedia("(max-width:730px)").matches}
 function openDrawer(){
   if(mobileMenu()){
@@ -188,7 +208,7 @@ function renderMode(){
 }
 function welcome(text){
   const feed=el("feed");feed.replaceChildren();
-  const block=document.createElement("div");block.className="welcome";
+  const block=document.createElement("div");block.className="welcome";block.id="welcome";
   const orb=document.createElement("div");orb.className="orb";
   const title=document.createElement("h2");title.textContent="PLQNX CORE";
   const p=document.createElement("p");p.textContent=text;
@@ -262,7 +282,7 @@ function formatAnswer(target,text){
   }
 }
 function bubble(role,text){
-  if(el("welcome"))el("welcome").remove();
+  el("welcome")?.remove();
   const wrapper=document.createElement("article");
   wrapper.className="message"+(role==="user"?" mine":"");
   const by=document.createElement("div");by.className="by";
@@ -359,12 +379,12 @@ el("auth").addEventListener("submit",async event=>{
 el("chatForm").addEventListener("submit",async event=>{
   event.preventDefault();if(busy||!access)return;
   const message=el("prompt").value.trim();if(!message)return;
-  busy=true;el("send").disabled=true;el("prompt").value="";
-  bubble("user",message);const waiting=bubble("model","Thinking…");
+  busy=true;el("send").disabled=true;el("prompt").value="";resizePrompt();
+  bubble("user",message);const waiting=bubble("model","Thinking…");waiting.classList.add("thinking");
   try{
     if(!current){const c=await call("/v1/conversations","POST",{title:"New chat"});current=c.id}
     const data=await call("/v1/chat","POST",{conversationId:current,message});
-    formatAnswer(waiting.querySelector("div:nth-child(2)"),data.answer);
+    waiting.classList.remove("thinking");formatAnswer(waiting.querySelector("div:nth-child(2)"),data.answer);
     const copy=document.createElement("button");copy.type="button";copy.className="copy-response";
     copy.textContent="Copy response";
     copy.addEventListener("click",async()=>{
@@ -375,7 +395,7 @@ el("chatForm").addEventListener("submit",async event=>{
     status("Saved · "+data.remainingToday+" requests remaining today");
     await loadList();
   }catch(error){
-    waiting.querySelector("div:last-child").textContent="Not saved: "+error.message;
+    waiting.classList.remove("thinking");waiting.querySelector("div:nth-child(2)").textContent="Unable to reply: "+error.message;
     status("Message failed. Try again.");
   }finally{busy=false;el("send").disabled=false;el("prompt").focus()}
 });
