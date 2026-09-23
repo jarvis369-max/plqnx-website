@@ -397,7 +397,7 @@ el("exportChat").addEventListener("click",async()=>{
       "Exported: "+new Date().toLocaleString(),
       data.messages.length===150?"Note: The beta loads up to 150 messages; older messages may be omitted.":"",
       ...data.messages.flatMap(m=>["",m.role==="user"?"YOU":"PLQNX CORE",m.content])
-    ].join("\\n");
+    ].join("\n");
     const blob=new Blob([content],{type:"text/plain;charset=utf-8"});
     const url=URL.createObjectURL(blob);
     const link=document.createElement("a");
