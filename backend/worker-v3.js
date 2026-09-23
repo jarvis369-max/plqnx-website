@@ -8,7 +8,7 @@ const SESSION_SECONDS = 7 * 86400;
 const encoder = new TextEncoder();
 const cors = origin => ({
   "Access-Control-Allow-Origin": origin === SITE ? SITE : "null",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, X-Beta-Code, Authorization",
   "Vary": "Origin", "Cache-Control": "no-store",
   "Content-Type": "application/json; charset=utf-8"
@@ -117,6 +117,24 @@ export default {
         const s=await createSession(env.DB,user.id);
         return reply({username:user.username,...s},200,origin);
       }
+      // Keep original chat endpoint for the existing website during migration.
+      // Beta-code holders only. This route does not save persistent conversations.
+      if(path==="/chat"&&method==="POST"){
+        if((request.headers.get("X-Beta-Code")||"")!==env.BETA_ACCESS_CODE)
+          return reply({error:"Invalid private beta access code."},401,origin);
+        const {message,history=[]}=await payload(request,16000);
+        if(typeof message!=="string"||!message.trim()||message.length>1000||
+          !Array.isArray(history)||history.length>12||
+          history.some(t=>!t||!["user","model"].includes(t.role)||
+            typeof t.text!=="string"||t.text.length>1000))
+          return reply({error:"Invalid message or history."},400,origin);
+        const contents=history.map(t=>({role:t.role,parts:[{text:t.text}]}));
+        contents.push({role:"user",parts:[{text:message.trim()}]});
+        const answer=await gemini(env,contents);
+        return reply({answer,diagnostic:{version:"memory-v2",priorTurnsReceived:history.length,
+          priorExchangesReceived:history.length/2}},200,origin);
+      }
+
       // All following API routes require a stored, unexpired login session.
       const user=await sessionUser(request,env.DB);
       if(!user)return reply({error:"Please sign in again."},401,origin);
@@ -196,23 +214,6 @@ export default {
             .bind(title,conversationId,user.id)
         ]);
         return reply({answer,title,remainingToday:DAILY_LIMIT-quota.requests},200,origin);
-      }
-      // Keep original chat endpoint for the existing website during migration.
-      // Beta-code holders only. This route does not save persistent conversations.
-      if(path==="/chat"&&method==="POST"){
-        if((request.headers.get("X-Beta-Code")||"")!==env.BETA_ACCESS_CODE)
-          return reply({error:"Invalid private beta access code."},401,origin);
-        const {message,history=[]}=await payload(request,16000);
-        if(typeof message!=="string"||!message.trim()||message.length>1000||
-          !Array.isArray(history)||history.length>12||
-          history.some(t=>!t||!["user","model"].includes(t.role)||
-            typeof t.text!=="string"||t.text.length>1000))
-          return reply({error:"Invalid message or history."},400,origin);
-        const contents=history.map(t=>({role:t.role,parts:[{text:t.text}]}));
-        contents.push({role:"user",parts:[{text:message.trim()}]});
-        const answer=await gemini(env,contents);
-        return reply({answer,diagnostic:{version:"memory-v2",priorTurnsReceived:history.length,
-          priorExchangesReceived:history.length/2}},200,origin);
       }
       return reply({error:"Not found."},404,origin);
     }catch(error){
