@@ -98,7 +98,21 @@ export default {
         const count=await env.DB.prepare("SELECT COUNT(*) AS n FROM users").first();
         if(count.n>=5)return reply({error:"Private beta registration is full."},403,origin);
         diagnosticStage="registration_password_hash";
-        const salt=token(),hashed=await passwordHash(password,salt),id=random();
+        let salt,hashed,id;
+        try {
+          diagnosticStage="registration_generate_salt";
+          salt=token();
+          diagnosticStage="registration_derive_password_hash";
+          hashed=await passwordHash(password,salt);
+          diagnosticStage="registration_generate_user_id";
+          id=random();
+        } catch (error) {
+          const kind=String(error?.name||"Unknown");
+          // Only return a short error category. Never reveal the password, salt, or derived hash.
+          const safeKind=/^(TypeError|NotSupportedError|OperationError|QuotaExceededError|InvalidAccessError|DataError|AbortError|UnknownError|Error)$/.test(kind)?kind:"OtherError";
+          console.error("PLQNX registration crypto failure",diagnosticStage,safeKind);
+          return reply({error:"Registration failed during "+diagnosticStage+" ("+safeKind+").",code:diagnosticStage,errorType:safeKind},500,origin);
+        }
         diagnosticStage="registration_insert_user";
         try{
           await env.DB.prepare("INSERT INTO users(id,username,password_salt,password_hash) VALUES(?,?,?,?)")
