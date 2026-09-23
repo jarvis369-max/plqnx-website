@@ -21,4 +21,66 @@
 <script>
 const menu=document.getElementById('menu'),links=document.getElementById('links');menu.onclick=()=>{let open=links.classList.toggle('show');menu.setAttribute('aria-expanded',String(open))};document.querySelectorAll('.navlinks a').forEach(a=>a.onclick=()=>{links.classList.remove('show');menu.setAttribute('aria-expanded','false')});document.getElementById('year').textContent=new Date().getFullYear();const dialog=document.getElementById('dialog'),promptBox=document.getElementById('prompt');function openDemo(){dialog.classList.add('open');dialog.setAttribute('aria-hidden','false');promptBox.focus()}function closeDemo(){dialog.classList.remove('open');dialog.setAttribute('aria-hidden','true')}document.querySelectorAll('[data-demo]').forEach(b=>b.onclick=openDemo);document.getElementById('close').onclick=closeDemo;dialog.onclick=e=>{if(e.target===dialog)closeDemo()};document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDemo()});function bubble(t,mine=false){const b=document.createElement('div');b.className='bubble'+(mine?' me':'');b.textContent=t;document.getElementById('messages').appendChild(b);b.scrollIntoView({block:'end',behavior:'smooth'})}function respond(s){let v=s.toLowerCase();if(/telugu|తెలుగు/.test(v))return 'నమస్కారం! ఇది PLQNX డెమో మాత్రమే. ప్రస్తుతం నిజమైన AI మోడల్ కనెక్ట్ కాలేదు.';if(/who|about|plqnx|company|startup/.test(v))return 'PLQNX is a pre-launch AI startup project inspired by the Planck scale. We are building our first assistant prototype.';if(/code|program|python|javascript/.test(v))return 'PLQNX FORGE is a future concept for developer tools. This scripted demo does not run or generate code yet.';if(/ai|assistant|chat/.test(v))return 'PLQNX CORE is currently an interactive scripted demo. Connecting a live AI model is planned for a private beta.';return 'Thanks for exploring PLQNX! This is a scripted preview, not live AI. Ask about our startup, AI plans, coding or Telugu support.'}document.getElementById('chatForm').onsubmit=e=>{e.preventDefault();let s=promptBox.value.trim();if(!s)return;bubble(s,true);promptBox.value='';bubble(respond(s))};
 </script>
+<script>
+/* PLQNX CORE optional private-beta connector. Demo remains default. */
+(()=> {
+const dialog=document.getElementById('dialog'), form=document.getElementById('chatForm');
+const header=dialog.querySelector('.chatheader');
+const actions=document.createElement('div');actions.style.cssText='display:flex;align-items:center;gap:8px';
+const connect=document.createElement('button');connect.type='button';connect.className='button';connect.style.cssText='font-size:11px;padding:6px 9px';connect.textContent='Connect live beta';
+header.insertBefore(actions,document.getElementById('close'));actions.appendChild(connect);
+const subtitle=header.querySelector('div div');const notice=dialog.querySelector('.smallprint');
+let endpoint=localStorage.getItem('plqnx_beta_endpoint')||'';
+let betaCode=sessionStorage.getItem('plqnx_beta_code')||'';
+const render=()=>{
+  let live=Boolean(endpoint&&betaCode);
+  connect.textContent=live?'Disconnect beta':'Connect live beta';
+  subtitle.textContent=live?'PRIVATE GEMINI BETA · LIVE AI':'SCRIPTED PROTOTYPE · NOT LIVE AI';
+  notice.textContent=live
+    ?'Private beta: messages are processed by Cloudflare and Google Gemini. Do not share sensitive information.'
+    :'Demo only. No messages are sent to a server or saved by this page.';
+};
+connect.addEventListener('click',()=>{
+  if(endpoint&&betaCode) {
+    endpoint='';betaCode='';
+    localStorage.removeItem('plqnx_beta_endpoint');sessionStorage.removeItem('plqnx_beta_code');
+    render();bubble('Live beta disconnected. Scripted demo restored.');return;
+  }
+  const entered=window.prompt('Paste the Cloudflare Worker URL (https://...workers.dev):',endpoint);
+  if(entered===null)return;
+  let url;
+  try {url=new URL(entered.trim());}
+  catch {bubble('Please enter a valid HTTPS Worker URL.');return;}
+  if(url.protocol!=='https:'||!url.hostname.endsWith('.workers.dev')||url.username||url.password||url.search||url.hash){
+    bubble('For this beta, enter a valid HTTPS workers.dev address.');return;
+  }
+  const code=window.prompt('Enter your private beta access code (never your Gemini API key):');
+  if(code===null)return;
+  if(code.length<12){bubble('The private beta access code must have at least 12 characters.');return;}
+  endpoint=url.origin;betaCode=code;
+  localStorage.setItem('plqnx_beta_endpoint',endpoint);
+  sessionStorage.setItem('plqnx_beta_code',betaCode);
+  render();bubble('Private beta configured. Send a short message to test your live AI.');
+});
+const input=document.getElementById('prompt'),submit=form.querySelector('button[type=submit]');
+form.addEventListener('submit',async e=>{
+  if(!endpoint||!betaCode)return;
+  e.preventDefault();e.stopImmediatePropagation();
+  const message=input.value.trim();if(!message)return;
+  if(message.length>1000){bubble('Please keep your message under 1,000 characters.');return;}
+  bubble(message,true);input.value='';submit.disabled=true;submit.textContent='Thinking…';
+  try {
+    const res=await fetch(endpoint+'/chat',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-Beta-Code':betaCode},
+      body:JSON.stringify({message})
+    });
+    const data=await res.json();
+    bubble(res.ok&&typeof data.answer==='string'?data.answer:(data.error||'Something went wrong.'));
+  } catch {bubble('Could not reach the Worker. Check its URL, deployment, and secrets.');}
+  finally {submit.disabled=false;submit.textContent='Send';}
+},true);
+render();
+})();
+</script>
 </body></html>
