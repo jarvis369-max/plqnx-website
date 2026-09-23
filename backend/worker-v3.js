@@ -1,0 +1,224 @@
+// PLQNX CORE 3: invite-only, D1-backed persistent conversations.
+// Deploy manually to Cloudflare. Requires existing D1 binding DB and secrets
+// GEMINI_API_KEY, BETA_ACCESS_CODE. Do not place any secrets in this file.
+// Keep this private beta: public registration needs WAF, verification and recovery.
+const SITE = "https://jarvis369-max.github.io";
+const DAILY_LIMIT = 25;
+const SESSION_SECONDS = 7 * 86400;
+const encoder = new TextEncoder();
+const cors = origin => ({
+  "Access-Control-Allow-Origin": origin === SITE ? SITE : "null",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, X-Beta-Code, Authorization",
+  "Vary": "Origin", "Cache-Control": "no-store",
+  "Content-Type": "application/json; charset=utf-8"
+});
+const reply = (data,status,origin) =>
+  new Response(JSON.stringify(data), {status,headers:cors(origin)});
+const hex = data => [...new Uint8Array(data)].map(x=>x.toString(16).padStart(2,"0")).join("");
+const sha = async text => hex(await crypto.subtle.digest("SHA-256",encoder.encode(text)));
+const random = () => crypto.randomUUID();
+const token = () => hex(crypto.getRandomValues(new Uint8Array(32)));
+async function passwordHash(password,salt) {
+  const key=await crypto.subtle.importKey("raw",encoder.encode(password),"PBKDF2",false,["deriveBits"]);
+  const bits=await crypto.subtle.deriveBits({
+    name:"PBKDF2",hash:"SHA-256",salt:encoder.encode(salt),iterations:120000
+  },key,256);
+  return hex(bits);
+}
+async function payload(request,max=3500) {
+  const raw=await request.text();
+  if(raw.length>max) throw new Error("Request is too large.");
+  let data;try{data=JSON.parse(raw)}catch{throw new Error("Invalid JSON.")}
+  if(!data||typeof data!=="object"||Array.isArray(data))throw new Error("Invalid request.");
+  return data;
+}
+async function sessionUser(request,db) {
+  const bearer=request.headers.get("Authorization")||"";
+  if(!/^Bearer [a-f0-9]{64}$/.test(bearer))return null;
+  const tokenHash=await sha(bearer.slice(7));
+  return db.prepare(
+    "SELECT users.id, users.username, sessions.token_hash FROM sessions JOIN users ON users.id=sessions.user_id WHERE sessions.token_hash=? AND sessions.expires_at>?"
+  ).bind(tokenHash,Math.floor(Date.now()/1000)).first();
+}
+async function createSession(db,userId) {
+  const value=token(),tokenHash=await sha(value),expires=Math.floor(Date.now()/1000)+SESSION_SECONDS;
+  await db.prepare("INSERT INTO sessions(token_hash,user_id,expires_at) VALUES(?,?,?)").bind(tokenHash,userId,expires).run();
+  return {token:value,expiresAt:expires};
+}
+const cleanTitle=s=>s.replace(/\s+/g," ").trim().slice(0,68)||"New chat";
+async function gemini(env,contents) {
+  const model=env.GEMINI_MODEL||"gemini-3.5-flash-lite";
+  if(!/^gemini-[a-z0-9.-]+$/.test(model))throw new Error("Invalid model configuration.");
+  const response=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+
+    encodeURIComponent(model)+":generateContent",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","x-goog-api-key":env.GEMINI_API_KEY},
+      body:JSON.stringify({
+        systemInstruction:{parts:[{text:
+          "You are PLQNX CORE, a helpful early-stage AI assistant for learning and coding. "+
+          "Use Telugu when the user writes Telugu. Do not claim PLQNX is incorporated or invent actions."
+        }]},
+        contents,generationConfig:{maxOutputTokens:650}
+      }),
+      signal:AbortSignal.timeout(25000)
+    });
+  if(response.status===429)throw new Error("Gemini quota reached. Try again later.");
+  if(!response.ok)throw new Error("Gemini request failed. Check the selected model and API quota.");
+  const data=await response.json();
+  const answer=(data.candidates?.[0]?.content?.parts||[])
+    .filter(p=>typeof p.text==="string").map(p=>p.text).join("").trim();
+  if(!answer)throw new Error("Gemini returned no text.");
+  return answer.slice(0,8000);
+}
+export default {
+  async fetch(request,env) {
+    const origin=request.headers.get("Origin")||"";
+    if(request.method==="OPTIONS")return new Response(null,{
+      status:origin===SITE?204:403,headers:cors(origin)
+    });
+    if(origin!==SITE)return reply({error:"Only the PLQNX website is allowed."},403,origin);
+    const path=new URL(request.url).pathname,method=request.method;
+    if(!env.DB||!env.GEMINI_API_KEY||!env.BETA_ACCESS_CODE)
+      return reply({error:"Backend missing DB binding or secrets."},503,origin);
+    try {
+      if(path==="/v1/status"&&method==="GET")
+        return reply({version:"persistent-v1",accounts:true,permanentMemory:true},200,origin);
+      if(path==="/v1/register"&&method==="POST"){
+        if((request.headers.get("X-Beta-Code")||"")!==env.BETA_ACCESS_CODE)
+          return reply({error:"Private beta invitation code required."},403,origin);
+        const {username,password}=await payload(request);
+        if(typeof username!=="string"||! /^[a-zA-Z][a-zA-Z0-9_]{2,19}$/.test(username)||
+           typeof password!=="string"||password.length<12||password.length>128)
+          return reply({error:"Username: 3–20 letters/numbers/underscores. Password: 12–128 characters."},400,origin);
+        const count=await env.DB.prepare("SELECT COUNT(*) AS n FROM users").first();
+        if(count.n>=5)return reply({error:"Private beta registration is full."},403,origin);
+        const salt=token(),hashed=await passwordHash(password,salt),id=random();
+        try{
+          await env.DB.prepare("INSERT INTO users(id,username,password_salt,password_hash) VALUES(?,?,?,?)")
+            .bind(id,username,salt,hashed).run();
+        }catch{return reply({error:"Username is unavailable."},409,origin);}
+        const s=await createSession(env.DB,id);
+        return reply({username, ...s},201,origin);
+      }
+      if(path==="/v1/login"&&method==="POST"){
+        const {username,password}=await payload(request);
+        if(typeof username!=="string"||typeof password!=="string"||
+           username.length>20||password.length>128)
+          return reply({error:"Invalid username or password."},401,origin);
+        const user=await env.DB.prepare(
+          "SELECT id,username,password_salt,password_hash FROM users WHERE username=? COLLATE NOCASE"
+        ).bind(username).first();
+        // A fixed dummy computation reduces obvious username enumeration via timing.
+        const salt=user?.password_salt||"0".repeat(64);
+        const hash=await passwordHash(password,salt);
+        if(!user||hash!==user.password_hash)
+          return reply({error:"Invalid username or password."},401,origin);
+        const s=await createSession(env.DB,user.id);
+        return reply({username:user.username,...s},200,origin);
+      }
+      // All following API routes require a stored, unexpired login session.
+      const user=await sessionUser(request,env.DB);
+      if(!user)return reply({error:"Please sign in again."},401,origin);
+      if(path==="/v1/me"&&method==="GET")
+        return reply({username:user.username},200,origin);
+      if(path==="/v1/logout"&&method==="POST"){
+        await env.DB.prepare("DELETE FROM sessions WHERE token_hash=?").bind(user.token_hash).run();
+        return reply({ok:true},200,origin);
+      }
+      if(path==="/v1/conversations"&&method==="GET"){
+        const rows=await env.DB.prepare(
+          "SELECT id,title,created_at,updated_at FROM conversations WHERE user_id=? ORDER BY updated_at DESC LIMIT 50"
+        ).bind(user.id).all();
+        return reply({conversations:rows.results||[]},200,origin);
+      }
+      if(path==="/v1/conversations"&&method==="POST"){
+        const {title="New chat"}=await payload(request,1200);
+        if(typeof title!=="string"||title.length>100)
+          return reply({error:"Invalid conversation title."},400,origin);
+        const id=random();
+        await env.DB.prepare("INSERT INTO conversations(id,user_id,title) VALUES(?,?,?)")
+          .bind(id,user.id,cleanTitle(title)).run();
+        return reply({id,title:cleanTitle(title)},201,origin);
+      }
+      const match=path.match(/^\/v1\/conversations\/([a-f0-9-]{36})$/);
+      if(match&&method==="GET"){
+        const convo=await env.DB.prepare(
+          "SELECT id,title FROM conversations WHERE id=? AND user_id=?"
+        ).bind(match[1],user.id).first();
+        if(!convo)return reply({error:"Conversation not found."},404,origin);
+        const result=await env.DB.prepare(
+          "SELECT role,content,created_at FROM messages WHERE conversation_id=? ORDER BY rowid ASC LIMIT 150"
+        ).bind(match[1]).all();
+        return reply({conversation:convo,messages:result.results||[]},200,origin);
+      }
+      if(match&&method==="DELETE"){
+        await env.DB.prepare("DELETE FROM conversations WHERE id=? AND user_id=?")
+          .bind(match[1],user.id).run();
+        return reply({ok:true},200,origin);
+      }
+      if(path==="/v1/chat"&&method==="POST"){
+        const {conversationId,message}=await payload(request,4000);
+        if(typeof conversationId!=="string"||
+           !/^[a-f0-9-]{36}$/.test(conversationId)||
+           typeof message!=="string"||!message.trim()||message.length>1000)
+          return reply({error:"Invalid conversation or message (max 1,000 characters)."},400,origin);
+        const convo=await env.DB.prepare(
+          "SELECT id,title FROM conversations WHERE id=? AND user_id=?"
+        ).bind(conversationId,user.id).first();
+        if(!convo)return reply({error:"Conversation not found."},404,origin);
+        const day=new Date().toISOString().slice(0,10);
+        const quota=await env.DB.prepare(
+          "INSERT INTO daily_usage(user_id,day,requests) VALUES(?,?,1) "+
+          "ON CONFLICT(user_id,day) DO UPDATE SET requests=requests+1 WHERE requests<? "+
+          "RETURNING requests"
+        ).bind(user.id,day,DAILY_LIMIT).first();
+        if(!quota)return reply({error:"Daily beta limit reached (25 requests). Try tomorrow."},429,origin);
+        const prev=await env.DB.prepare(
+          "SELECT role,content FROM messages WHERE conversation_id=? ORDER BY rowid DESC LIMIT 12"
+        ).bind(conversationId).all();
+        const contents=(prev.results||[]).reverse().map(m=>({
+          role:m.role,parts:[{text:m.content}]
+        }));
+        // Drop an unmatched leading model reply when only the last 12 rows are loaded.
+        if(contents[0]?.role==="model")contents.shift();
+        contents.push({role:"user",parts:[{text:message.trim()}]});
+        let answer;
+        try{answer=await gemini(env,contents)}
+        catch(error){return reply({error:error.message||"AI unavailable."},502,origin)}
+        const title=convo.title==="New chat"?cleanTitle(message):convo.title;
+        await env.DB.batch([
+          env.DB.prepare("INSERT INTO messages(id,conversation_id,role,content) VALUES(?,?,?,?)")
+            .bind(random(),conversationId,"user",message.trim()),
+          env.DB.prepare("INSERT INTO messages(id,conversation_id,role,content) VALUES(?,?,?,?)")
+            .bind(random(),conversationId,"model",answer),
+          env.DB.prepare("UPDATE conversations SET title=?,updated_at=unixepoch() WHERE id=? AND user_id=?")
+            .bind(title,conversationId,user.id)
+        ]);
+        return reply({answer,title,remainingToday:DAILY_LIMIT-quota.requests},200,origin);
+      }
+      // Keep original chat endpoint for the existing website during migration.
+      // Beta-code holders only. This route does not save persistent conversations.
+      if(path==="/chat"&&method==="POST"){
+        if((request.headers.get("X-Beta-Code")||"")!==env.BETA_ACCESS_CODE)
+          return reply({error:"Invalid private beta access code."},401,origin);
+        const {message,history=[]}=await payload(request,16000);
+        if(typeof message!=="string"||!message.trim()||message.length>1000||
+          !Array.isArray(history)||history.length>12||
+          history.some(t=>!t||!["user","model"].includes(t.role)||
+            typeof t.text!=="string"||t.text.length>1000))
+          return reply({error:"Invalid message or history."},400,origin);
+        const contents=history.map(t=>({role:t.role,parts:[{text:t.text}]}));
+        contents.push({role:"user",parts:[{text:message.trim()}]});
+        const answer=await gemini(env,contents);
+        return reply({answer,diagnostic:{version:"memory-v2",priorTurnsReceived:history.length,
+          priorExchangesReceived:history.length/2}},200,origin);
+      }
+      return reply({error:"Not found."},404,origin);
+    }catch(error){
+      if(/Invalid JSON|Request is too large|Invalid request/.test(error.message))
+        return reply({error:error.message},400,origin);
+      return reply({error:"Server error. Check your Worker deployment and D1 binding."},500,origin);
+    }
+  }
+};
