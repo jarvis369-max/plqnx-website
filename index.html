@@ -29,6 +29,16 @@ const header=dialog.querySelector('.chatheader');
 const actions=document.createElement('div');actions.style.cssText='display:flex;align-items:center;gap:8px';
 const connect=document.createElement('button');connect.type='button';connect.className='button';connect.style.cssText='font-size:11px;padding:6px 9px';connect.textContent='Connect live beta';
 header.insertBefore(actions,document.getElementById('close'));actions.appendChild(connect);
+const newChat=document.createElement('button');
+newChat.type='button';newChat.className='button';newChat.style.cssText='font-size:11px;padding:6px 9px';newChat.textContent='New chat';
+actions.appendChild(newChat);
+let history=[]; // Stored only in memory for this open page, not in localStorage.
+newChat.addEventListener('click',()=>{
+  history=[];
+  const messages=document.getElementById('messages');
+  messages.replaceChildren();
+  bubble('New conversation started. Previous messages have been cleared from this page.');
+});
 const subtitle=header.querySelector('div div');const notice=dialog.querySelector('.smallprint');
 let endpoint=localStorage.getItem('plqnx_beta_endpoint')||'';
 let betaCode=sessionStorage.getItem('plqnx_beta_code')||'';
@@ -44,7 +54,7 @@ connect.addEventListener('click',()=>{
   if(endpoint&&betaCode) {
     endpoint='';betaCode='';
     localStorage.removeItem('plqnx_beta_endpoint');sessionStorage.removeItem('plqnx_beta_code');
-    render();bubble('Live beta disconnected. Scripted demo restored.');return;
+    history=[];render();bubble('Live beta disconnected. Scripted demo restored.');return;
   }
   const entered=window.prompt('Paste the Cloudflare Worker URL (https://...workers.dev):',endpoint);
   if(entered===null)return;
@@ -73,10 +83,17 @@ form.addEventListener('submit',async e=>{
     const res=await fetch(endpoint+'/chat',{
       method:'POST',
       headers:{'Content-Type':'application/json','X-Beta-Code':betaCode},
-      body:JSON.stringify({message})
+      body:JSON.stringify({message,history:history.slice(-12)})
     });
     const data=await res.json();
-    bubble(res.ok&&typeof data.answer==='string'?data.answer:(data.error||'Something went wrong.'));
+    if(res.ok&&typeof data.answer==='string') {
+      const answer=data.answer.slice(0,8000);
+      history.push({role:'user',text:message},{role:'model',text:answer.slice(0,1000)});
+      history=history.slice(-12);
+      bubble(answer);
+    } else {
+      bubble(data.error||'Something went wrong. Try again.');
+    }
   } catch {bubble('Could not reach the Worker. Check its URL, deployment, and secrets.');}
   finally {submit.disabled=false;submit.textContent='Send';}
 },true);
