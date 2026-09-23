@@ -19,10 +19,13 @@ const hex = data => [...new Uint8Array(data)].map(x=>x.toString(16).padStart(2,"
 const sha = async text => hex(await crypto.subtle.digest("SHA-256",encoder.encode(text)));
 const random = () => crypto.randomUUID();
 const token = () => hex(crypto.getRandomValues(new Uint8Array(32)));
+// Cloudflare production Workers cap a single PBKDF2 call at 100,000 iterations.
+// This is an invite-only compatibility setting, not strong production authentication.
+// Before a public launch migrate to a vetted managed auth provider or audited KDF.
 async function passwordHash(password,salt) {
   const key=await crypto.subtle.importKey("raw",encoder.encode(password),"PBKDF2",false,["deriveBits"]);
   const bits=await crypto.subtle.deriveBits({
-    name:"PBKDF2",hash:"SHA-256",salt:encoder.encode(salt),iterations:120000
+    name:"PBKDF2",hash:"SHA-256",salt:encoder.encode(salt),iterations:100000
   },key,256);
   return hex(bits);
 }
