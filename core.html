@@ -47,6 +47,50 @@ main{height:100dvh}.top{padding:10px 12px}.top h1{font-size:15px}
 }
 @media(prefers-reduced-motion:reduce){.layout aside{transition:none}}
 @media(prefers-reduced-motion:reduce){.orb{animation:none}}
+
+/* PLQNX warm-white edition: ivory, oat, rose and muted sage. No blue palette. */
+:root{color-scheme:light;--bg:#faf8f4;--glass:#fffefaee;--line:#e9e3da;--cyan:#796950;--white:#302e2b;--muted:#78736d}
+body{background:radial-gradient(ellipse at 86% 3%,#f6e8dcaa,transparent 45%),radial-gradient(ellipse at 7% 85%,#eaf0e588,transparent 50%),#faf8f4;color:#302e2b}
+body:before{background-image:radial-gradient(#d8d0c5aa .8px,transparent .8px);opacity:.38;background-size:30px 30px}
+a{color:#765f49}a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid #a78d71;outline-offset:3px}
+aside{background:#fffefaeF;border-color:#eae5dd;box-shadow:9px 0 35px #5148390d}
+.brand b{color:#9a8061}.label{color:#8d7f72}
+.btn{color:#4c4239;border:1px solid #e6ded3;background:#fffdfa;box-shadow:0 3px 15px #5148390a}
+.btn:hover{border-color:#c3b2a0;background:#f7f1eb}
+.btn.primary{background:#eee4d8;color:#45392e;border:1px solid #e3d4c1;box-shadow:0 4px 16px #b4a08c24}
+.btn.primary:hover{background:#e6d7c6}.btn.danger{border-color:#e6c6c3;color:#974e4d;background:#fff8f6}
+.conversation{background:#faf7f2;color:#51473c;border-color:transparent}
+.conversation.active{background:#f1e9df;border-color:#dac9b6}
+.search,.composer textarea,input{background:#fffdfa;color:#3b3630;border:1px solid #e2d9ce}
+.search::placeholder,.composer textarea::placeholder,input::placeholder{color:#978b7c}
+.search:focus,.composer textarea:focus,input:focus{border-color:#af9a83}
+.top{background:#fffdf8dc;border-color:#e9e3da}
+.feed .message{background:#fffefa;color:#39352f;border:1px solid #ebe5dd;box-shadow:0 8px 24px #75695610}
+.feed .message.mine{background:#f4ece3;border-color:#e7dbcd}
+.message .by{color:#947757}.message.mine .by{color:#997d70}
+.welcome .orb{border-color:#c4ac97;box-shadow:0 0 42px #f0d8c9aa}
+.welcome .orb:after{background:#bba58f;box-shadow:0 0 25px #e8d8c6}
+@keyframes pulse{50%{box-shadow:0 0 55px #e3d4c3b0;transform:rotate(225deg)}}
+.composer{background:#fffdf9e8;border-color:#e9e3da}
+.formatted pre{background:#f6f3ee;border-color:#e7ded2;color:#3c3933}
+.formatted code{background:#f0ebe4;color:#6d523d}
+.formatted pre code{background:transparent;color:inherit}
+.formatted strong{color:#312b27}.formatted em{color:#76624d}
+.codebar{color:#877a6d}.codebar button,.copy-response{border:1px solid #e3d6c7;background:#faf5ed;color:#725943}
+.overlay{background:#f4efe8dc}.auth{background:#fffefa;border:1px solid #e6d9c8;box-shadow:0 24px 90px #62544424}
+.auth p,.notice,.small,.subtitle,.footer-note,.empty-list{color:#82786e}
+.error{color:#a74848}.auth input{background:#fffdf9;color:#302e2b}.switch{color:#775d45}
+#drawerBackdrop{background:#40372e76!important}
+.sidebar-toggle{display:inline-flex;align-items:center;justify-content:center}
+.layout.sidebar-collapsed{grid-template-columns:0 1fr}
+.layout.sidebar-collapsed aside{overflow:hidden;visibility:hidden;padding:0;border:0}
+@media(max-width:730px){
+.layout.sidebar-collapsed{grid-template-columns:1fr}
+.layout.sidebar-collapsed aside{visibility:visible;padding:12px 15px;border-right:1px solid var(--line)}
+.layout aside{background:#fffdfa;box-shadow:15px 0 40px #4b40351c}
+.layout aside.open{transform:translateX(0)}
+}
+
 </style>
 </head>
 <body>
@@ -61,7 +105,7 @@ main{height:100dvh}.top{padding:10px 12px}.top h1{font-size:15px}
     <div class="aside-bottom"><div class="small">Private beta · Up to 25 requests per user per day. Never send sensitive information.</div><button class="btn" id="logout" type="button">Sign out</button></div>
   </aside>
   <main>
-    <div class="top"><button class="btn sidebar-toggle" id="openSidebar" type="button" aria-label="Open saved conversations" aria-expanded="false">☰</button><div style="flex:1;min-width:0"><h1 id="chatTitle">PLQNX CORE</h1><div class="subtitle" id="status" aria-live="polite">Checking backend…</div></div><div><span class="small" id="username"></span> <button class="btn danger hidden" id="deleteChat" type="button">Delete chat</button></div></div>
+    <div class="top"><button class="btn sidebar-toggle" id="openSidebar" type="button" aria-label="Open saved conversations" aria-expanded="true">☰ Menu</button><div style="flex:1;min-width:0"><h1 id="chatTitle">PLQNX CORE</h1><div class="subtitle" id="status" aria-live="polite">Checking backend…</div></div><div><span class="small" id="username"></span> <button class="btn danger hidden" id="deleteChat" type="button">Delete chat</button></div></div>
     <div class="feed" id="feed" aria-live="polite"><div class="welcome" id="welcome"><div class="orb"></div><h2>From the smallest to the infinite.</h2><p>Private beta with saved chats. Sign in to begin.</p></div></div>
     <form class="composer" id="chatForm"><textarea id="prompt" placeholder="Ask PLQNX CORE anything…" maxlength="1000" rows="2" required></textarea><button class="btn primary" id="send" type="submit">Send ↗</button></form>
     <div class="footer-note">PLQNX is an early-stage AI project. Responses may be inaccurate. Messages are processed by Cloudflare and Google Gemini.</div>
@@ -91,9 +135,30 @@ let access=sessionStorage.getItem("plqnx_v3_token")||"";
 let name=sessionStorage.getItem("plqnx_v3_name")||"";
 let current="",mode="login",busy=false,convos=[];
 const status=t=>el("status").textContent=t;
-function openDrawer(){el("drawerBackdrop").classList.remove("hidden");el("openSidebar").setAttribute("aria-expanded","true");document.querySelector("aside").classList.add("open")}
-function closeDrawer(){el("drawerBackdrop").classList.add("hidden");el("openSidebar").setAttribute("aria-expanded","false");document.querySelector("aside").classList.remove("open")}
-el("openSidebar").addEventListener("click",openDrawer);
+function mobileMenu(){return window.matchMedia("(max-width:730px)").matches}
+function openDrawer(){
+  if(mobileMenu()){
+    el("drawerBackdrop").classList.remove("hidden");
+    document.querySelector("aside").classList.add("open");
+    el("openSidebar").setAttribute("aria-expanded","true");
+  }else{
+    document.querySelector(".layout").classList.remove("sidebar-collapsed");
+    el("openSidebar").setAttribute("aria-expanded","true");
+  }
+}
+function closeDrawer(){
+  el("drawerBackdrop").classList.add("hidden");
+  document.querySelector("aside").classList.remove("open");
+  if(!mobileMenu())document.querySelector(".layout").classList.add("sidebar-collapsed");
+  el("openSidebar").setAttribute("aria-expanded","false");
+}
+el("openSidebar").addEventListener("click",()=>{
+  if(mobileMenu()){
+    document.querySelector("aside").classList.contains("open")?closeDrawer():openDrawer();
+  }else{
+    document.querySelector(".layout").classList.contains("sidebar-collapsed")?openDrawer():closeDrawer();
+  }
+});
 el("closeSidebar").addEventListener("click",closeDrawer);
 el("drawerBackdrop").addEventListener("click",closeDrawer);
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeDrawer()});
