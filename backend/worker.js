@@ -2,7 +2,7 @@
 // Set GEMINI_API_KEY and BETA_ACCESS_CODE as Cloudflare encrypted secrets.
 // DO NOT paste keys into this public file, GitHub Pages, or chat.
 const SITE = "https://jarvis369-max.github.io";
-const PATH_ORIGIN = SITE;
+// Keep this as a private beta. A shared access code is not full user authentication.
 function headers(origin) {
   return {
     "Access-Control-Allow-Origin": origin === SITE ? SITE : "null",
@@ -32,7 +32,7 @@ export default {
     if (provided.length < 12 || provided !== env.BETA_ACCESS_CODE)
       return json({ error: "Invalid private beta access code." }, 401, origin);
     const bodyText = await request.text();
-    if (bodyText.length > 3500)
+    if (bodyText.length > 16000)
       return json({ error: "Request too long." }, 413, origin);
     let input;
     try { input = JSON.parse(bodyText); }
@@ -40,6 +40,20 @@ export default {
     if (!input || typeof input.message !== "string" || !input.message.trim() ||
         input.message.length > 1000)
       return json({ error: "Message must be 1–1000 characters." }, 400, origin);
+    // Accept up to six complete prior exchanges, with strict length bounds.
+    const history = Array.isArray(input.history) ? input.history : [];
+    if (history.length > 12 || history.some(turn =>
+      !turn || !["user", "model"].includes(turn.role) ||
+      typeof turn.text !== "string" || !turn.text.trim() || turn.text.length > 1000
+    )) return json({error:"Invalid conversation history."},400,origin);
+    // Model contents must begin with a user turn and alternate roles.
+    if (history.some((turn, index) => turn.role !== (index % 2 === 0 ? "user" : "model")) ||
+        history.length % 2 !== 0)
+      return json({error:"Conversation history must contain complete exchanges."},400,origin);
+    const contents = history.map(turn => ({
+      role:turn.role, parts:[{text:turn.text}]
+    }));
+    contents.push({role:"user",parts:[{text:input.message.trim()}]});
     const model = env.GEMINI_MODEL || "gemini-3.5-flash-lite";
     // Only owner-selected safe model ids; never accept a model from a browser request.
     if (!/^gemini-[a-z0-9.-]+$/.test(model))
@@ -56,7 +70,7 @@ export default {
             "Answer clearly, respond in Telugu when the user writes Telugu, and never falsely " +
             "claim that PLQNX is incorporated or that you performed actions you did not perform."
           }]},
-          contents: [{role:"user",parts:[{text:input.message.trim()}]}],
+          contents,
           generationConfig: {maxOutputTokens: 650}
         }),
         signal: AbortSignal.timeout(25000)
