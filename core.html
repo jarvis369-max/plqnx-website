@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#071120">
+<title>PLQNX CORE | Private Beta</title>
+<style>
+:root{color-scheme:dark;--bg:#07111f;--glass:#102841b8;--line:#8de7ff30;--cyan:#84eaff;--white:#eaf7ff;--muted:#91acc4}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 80% -20%,#1a608455,transparent 45%),radial-gradient(ellipse at -10% 85%,#514c9655,transparent 50%),var(--bg);font:15px/1.55 Inter,ui-sans-serif,system-ui,sans-serif;color:var(--white)}
+body:before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background-image:radial-gradient(#87cdec24 1px,transparent 1px);background-size:28px 28px}
+button,input,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:wait}a{color:var(--cyan)}
+.hidden{display:none!important}.layout{display:grid;grid-template-columns:270px 1fr;min-height:100dvh}
+aside{background:#091c2cd9;border-right:1px solid var(--line);padding:24px 16px;display:flex;flex-direction:column;gap:20px;backdrop-filter:blur(18px)}
+.brand{color:var(--white);font-size:21px;font-weight:900;letter-spacing:.19em;text-decoration:none}.brand b{color:var(--cyan)}
+.label{color:var(--muted);font-size:10px;letter-spacing:.2em;font-weight:800}
+.btn{padding:11px 15px;border-radius:12px;border:1px solid #88e5ff75;background:#5bc9ee16;color:var(--white);font-weight:650}.btn:hover{border-color:var(--cyan)}.btn.primary{background:linear-gradient(115deg,#84eaff,#a4acff);color:#0a1929;border:0}.btn.danger{border-color:#e87b8c88;color:#ffb9c6}
+.list{display:flex;flex-direction:column;gap:7px;overflow:auto;max-height:60vh}.conversation{width:100%;border:1px solid transparent;background:#ffffff08;color:var(--white);padding:11px 12px;border-radius:12px;display:flex;gap:7px;text-align:left;align-items:center}.conversation span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.conversation.active{border-color:#82def780;background:#62d8f71f}
+.small{color:var(--muted);font-size:12px}.aside-bottom{margin-top:auto;display:grid;gap:8px}
+main{min-width:0;display:flex;flex-direction:column;height:100dvh}.top{padding:15px 23px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;align-items:center;background:#0c22339c;backdrop-filter:blur(20px)}
+h1{font-size:18px;margin:0}.subtitle{color:var(--muted);font-size:11px}.feed{overflow:auto;flex:1;width:min(920px,100%);margin:auto;padding:28px 20px;display:flex;flex-direction:column;gap:15px}.message{max-width:min(780px,92%);padding:15px 18px;border:1px solid #84dfff1e;border-radius:18px;background:#17344a9c;white-space:pre-wrap;overflow-wrap:anywhere}.message.mine{align-self:flex-end;background:#245175a8}.message .by{font-size:10px;font-weight:750;letter-spacing:.16em;color:var(--cyan);margin-bottom:8px}.message.mine .by{color:#c6c8ff}
+.welcome{margin:auto;text-align:center;max-width:520px}.orb{margin:0 auto 20px;width:78px;height:78px;border:2px solid var(--cyan);border-radius:28px;transform:rotate(45deg);box-shadow:0 0 40px #63daff60;animation:pulse 5s ease-in-out infinite}.orb:after{content:"";display:block;margin:24px;width:28px;height:28px;background:var(--cyan);border-radius:50%;box-shadow:0 0 22px var(--cyan)}@keyframes pulse{50%{box-shadow:0 0 58px #6b8bfa70;transform:rotate(225deg)}}.welcome h2{font-size:clamp(28px,5vw,44px);margin:0}.welcome p{color:var(--muted)}
+.composer{padding:14px max(15px,calc((100% - 900px)/2));border-top:1px solid var(--line);display:flex;gap:10px;align-items:center;background:#0b1e31ba}.composer textarea{flex:1;min-width:0;resize:vertical;max-height:170px;min-height:55px;border:1px solid var(--line);border-radius:16px;background:#102b40db;color:var(--white);padding:15px;outline:none}.composer textarea:focus,input:focus{border-color:#8eeaff}
+.footer-note{padding:4px 16px 11px;text-align:center;color:var(--muted);font-size:10px}
+.overlay{position:fixed;inset:0;z-index:30;background:#020915dc;display:flex;align-items:center;justify-content:center;padding:20px}.auth{width:min(440px,100%);border:1px solid #89e4ff70;background:#0b2239f5;box-shadow:0 15px 90px #0008;border-radius:24px;padding:28px;display:grid;gap:15px}.auth h2{margin:0;font-size:25px}.auth p{margin:0;color:var(--muted);font-size:13px}label{display:grid;gap:5px;color:#cbe8f5;font-size:13px}input{width:100%;border:1px solid var(--line);background:#092032;color:var(--white);padding:12px;border-radius:10px;outline:none}.switch{background:none;border:0;color:var(--cyan);text-decoration:underline;padding:8px}.error{color:#ffb8bf;font-size:12px}.notice{font-size:12px;color:#a5bdcb}
+@media(max-width:730px){.layout{grid-template-columns:1fr}.layout aside{height:auto;padding:12px 15px}.list{max-height:95px}.aside-bottom{display:none}main{height:calc(100dvh - 185px)}.top{padding:10px 16px}.message{max-width:100%}}
+@media(prefers-reduced-motion:reduce){.orb{animation:none}}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside>
+    <a class="brand" href="./">PL<b>QNX</b></a>
+    <div class="label">CORE · SAVED CONVERSATIONS</div>
+    <button class="btn primary" id="newChat" type="button">＋ New conversation</button>
+    <div class="list" id="conversations" aria-label="Saved conversations"></div>
+    <div class="aside-bottom"><div class="small">Private beta · Up to 25 requests per user per day. Never send sensitive information.</div><button class="btn" id="logout" type="button">Sign out</button></div>
+  </aside>
+  <main>
+    <div class="top"><div><h1 id="chatTitle">PLQNX CORE</h1><div class="subtitle" id="status" aria-live="polite">Checking backend…</div></div><div><span class="small" id="username"></span> <button class="btn danger hidden" id="deleteChat" type="button">Delete chat</button></div></div>
+    <div class="feed" id="feed" aria-live="polite"><div class="welcome" id="welcome"><div class="orb"></div><h2>From the smallest to the infinite.</h2><p>Private beta with saved chats. Sign in to begin.</p></div></div>
+    <form class="composer" id="chatForm"><textarea id="prompt" placeholder="Ask PLQNX CORE anything…" maxlength="1000" rows="2" required></textarea><button class="btn primary" id="send" type="submit">Send ↗</button></form>
+    <div class="footer-note">PLQNX is an early-stage AI project. Responses may be inaccurate. Messages are processed by Cloudflare and Google Gemini.</div>
+  </main>
+</div>
+<div class="overlay" id="overlay">
+  <form class="auth" id="auth">
+    <a class="brand" href="./">PL<b>QNX</b></a>
+    <div class="label">INVITE-ONLY PRIVATE BETA</div>
+    <h2 id="authTitle">Welcome back</h2>
+    <p id="authDescription">Sign in to reopen your conversations across page refreshes.</p>
+    <label>Username<input id="loginName" autocomplete="username" minlength="3" maxlength="20" pattern="[A-Za-z][A-Za-z0-9_]{2,19}" required></label>
+    <label>Password<input id="loginPassword" type="password" autocomplete="current-password" minlength="12" maxlength="128" required></label>
+    <label id="inviteLabel" class="hidden">Private beta access code<input id="invite" type="password" autocomplete="off"></label>
+    <div class="error" id="authError" role="alert"></div>
+    <button class="btn primary" type="submit" id="authSubmit">Sign in</button>
+    <button class="switch" id="switchMode" type="button">Have an invitation? Create account</button>
+    <p class="notice">Private testing only. Keep your invitation code and password private. Accounts are limited during beta.</p>
+  </form>
+</div>
+<script>
+(()=>{
+"use strict";
+const API="https://plqnx-core-beta.sasankm2009.workers.dev";
+const el=id=>document.getElementById(id);
+let access=sessionStorage.getItem("plqnx_v3_token")||"";
+let name=sessionStorage.getItem("plqnx_v3_name")||"";
+let current="",mode="login",busy=false,convos=[];
+const status=t=>el("status").textContent=t;
+function showError(t){el("authError").textContent=t}
+async function call(path,method="GET",body,invitation){
+  const headers={"Content-Type":"application/json"};
+  if(access)headers.Authorization="Bearer "+access;
+  if(invitation)headers["X-Beta-Code"]=invitation;
+  let res;
+  try{res=await fetch(API+path,{method,headers,body:body===undefined?undefined:JSON.stringify(body)})}
+  catch{throw Error("Cannot reach the Worker. Check that the V3 backend is deployed.")}
+  let data;try{data=await res.json()}catch{throw Error("Unexpected backend response. Deploy Worker V3 first.")}
+  if(!res.ok)throw Error(data.error||"Request failed.");
+  return data;
+}
+function authScreen(open){el("overlay").classList.toggle("hidden",!open)}
+function renderMode(){
+  const reg=mode==="register";
+  el("authTitle").textContent=reg?"Create a beta account":"Welcome back";
+  el("authDescription").textContent=reg?"Use your private beta code to register.":"Sign in to reopen saved conversations.";
+  el("authSubmit").textContent=reg?"Create account":"Sign in";
+  el("switchMode").textContent=reg?"Already registered? Sign in":"Have an invitation? Create account";
+  el("inviteLabel").classList.toggle("hidden",!reg);
+  el("invite").required=reg;
+  el("loginPassword").autocomplete=reg?"new-password":"current-password";
+  showError("");
+}
+function welcome(text){
+  const feed=el("feed");feed.replaceChildren();
+  const block=document.createElement("div");block.className="welcome";
+  const orb=document.createElement("div");orb.className="orb";
+  const title=document.createElement("h2");title.textContent="PLQNX CORE";
+  const p=document.createElement("p");p.textContent=text;
+  block.append(orb,title,p);feed.append(block);
+}
+function bubble(role,text){
+  if(el("welcome"))el("welcome").remove();
+  const wrapper=document.createElement("article");
+  wrapper.className="message"+(role==="user"?" mine":"");
+  const by=document.createElement("div");by.className="by";
+  by.textContent=role==="user"?"YOU":"PLQNX CORE";
+  const content=document.createElement("div");content.textContent=text;
+  wrapper.append(by,content);el("feed").append(wrapper);
+  el("feed").scrollTop=el("feed").scrollHeight;
+  return wrapper;
+}
+function renderList(){
+  el("conversations").replaceChildren();
+  for(const c of convos){
+    const button=document.createElement("button");button.type="button";
+    button.className="conversation"+(c.id===current?" active":"");
+    const span=document.createElement("span");span.textContent=c.title;
+    button.append(span);button.addEventListener("click",()=>openChat(c.id));
+    el("conversations").append(button);
+  }
+}
+async function loadList(){
+  const data=await call("/v1/conversations");
+  convos=data.conversations||[];
+  renderList();
+}
+async function openChat(id){
+  if(busy)return;
+  try{
+    status("Loading saved conversation…");
+    const data=await call("/v1/conversations/"+id);
+    current=id;el("chatTitle").textContent=data.conversation.title;
+    el("feed").replaceChildren();
+    for(const m of data.messages)bubble(m.role,m.content);
+    if(!data.messages.length)welcome("A new conversation. What shall we explore?");
+    el("deleteChat").classList.remove("hidden");
+    renderList();status("Saved memory active");
+  }catch(error){status(error.message)}
+}
+async function newChat(){
+  if(busy)return;
+  try{
+    const c=await call("/v1/conversations","POST",{title:"New chat"});
+    await loadList();await openChat(c.id);
+  }catch(error){status(error.message)}
+}
+async function ready(){
+  try{
+    const info=await call("/v1/status");if(info.version!=="persistent-v1")
+      throw Error("Deploy Worker V3 to enable saved conversations.");
+    if(access){
+      try{
+        const user=await call("/v1/me");name=user.username;
+        el("username").textContent=name;authScreen(false);await loadList();
+        if(convos.length)await openChat(convos[0].id);
+        else await newChat();
+      }catch{access="";sessionStorage.removeItem("plqnx_v3_token");authScreen(true);status("Please sign in.");}
+    }else{authScreen(true);status("Sign in to continue.");}
+  }catch(error){authScreen(true);status(error.message);showError(error.message)}
+}
+el("switchMode").addEventListener("click",()=>{mode=mode==="login"?"register":"login";renderMode()});
+el("auth").addEventListener("submit",async event=>{
+  event.preventDefault();el("authSubmit").disabled=true;showError("");
+  const username=el("loginName").value.trim(),password=el("loginPassword").value;
+  const invitation=mode==="register"?el("invite").value:"";
+  try{
+    const data=await call(mode==="register"?"/v1/register":"/v1/login","POST",
+      {username,password},invitation);
+    access=data.token;name=data.username;
+    sessionStorage.setItem("plqnx_v3_token",access);
+    sessionStorage.setItem("plqnx_v3_name",name);
+    el("loginPassword").value="";el("invite").value="";
+    authScreen(false);el("username").textContent=name;
+    await loadList();if(convos.length)await openChat(convos[0].id);else await newChat();
+  }catch(error){showError(error.message)}
+  finally{el("authSubmit").disabled=false}
+});
+el("chatForm").addEventListener("submit",async event=>{
+  event.preventDefault();if(busy||!access)return;
+  const message=el("prompt").value.trim();if(!message)return;
+  busy=true;el("send").disabled=true;el("prompt").value="";
+  bubble("user",message);const waiting=bubble("model","Thinking…");
+  try{
+    if(!current){const c=await call("/v1/conversations","POST",{title:"New chat"});current=c.id}
+    const data=await call("/v1/chat","POST",{conversationId:current,message});
+    waiting.querySelector("div:last-child").textContent=data.answer;
+    el("chatTitle").textContent=data.title;
+    status("Saved · "+data.remainingToday+" requests remaining today");
+    await loadList();
+  }catch(error){
+    waiting.querySelector("div:last-child").textContent="Not saved: "+error.message;
+    status("Message failed. Try again.");
+  }finally{busy=false;el("send").disabled=false;el("prompt").focus()}
+});
+el("newChat").addEventListener("click",newChat);
+el("deleteChat").addEventListener("click",async()=>{
+  if(!current||busy||!confirm("Permanently delete this conversation?"))return;
+  try{
+    await call("/v1/conversations/"+current,"DELETE");current="";
+    await loadList();
+    if(convos.length)await openChat(convos[0].id);else await newChat();
+  }catch(error){status(error.message)}
+});
+el("logout").addEventListener("click",async()=>{
+  try{if(access)await call("/v1/logout","POST")}catch{}
+  access="";current="";name="";
+  sessionStorage.removeItem("plqnx_v3_token");
+  sessionStorage.removeItem("plqnx_v3_name");
+  welcome("Sign in to reopen your saved conversations.");
+  el("conversations").replaceChildren();
+  authScreen(true);status("Signed out.");
+});
+el("prompt").addEventListener("keydown",e=>{
+  if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();el("chatForm").requestSubmit()}
+});
+ready();
+})();
+</script>
+</body>
+</html>
