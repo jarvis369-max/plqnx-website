@@ -15,7 +15,12 @@ aside{background:#091c2cd9;border-right:1px solid var(--line);padding:24px 16px;
 .label{color:var(--muted);font-size:10px;letter-spacing:.2em;font-weight:800}
 .btn{padding:11px 15px;border-radius:12px;border:1px solid #88e5ff75;background:#5bc9ee16;color:var(--white);font-weight:650}.btn:hover{border-color:var(--cyan)}.btn.primary{background:linear-gradient(115deg,#84eaff,#a4acff);color:#0a1929;border:0}.btn.danger{border-color:#e87b8c88;color:#ffb9c6}
 .list{display:flex;flex-direction:column;gap:7px;overflow:auto;max-height:60vh}.conversation{width:100%;border:1px solid transparent;background:#ffffff08;color:var(--white);padding:11px 12px;border-radius:12px;display:flex;gap:7px;text-align:left;align-items:center}.conversation span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.conversation.active{border-color:#82def780;background:#62d8f71f}
-.small{color:var(--muted);font-size:12px}.aside-bottom{margin-top:auto;display:grid;gap:8px}
+.small{color:var(--muted);font-size:12px}
+.search{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#102b40db;color:var(--white);outline:none}
+.search:focus{border-color:var(--cyan)}
+.copy-response{margin-top:12px;display:inline-flex;align-items:center;gap:6px;border:1px solid #8de7ff4a;color:var(--cyan);background:#102b409a;border-radius:9px;padding:5px 10px;font-size:11px;cursor:pointer}
+.empty-list{color:var(--muted);padding:12px;font-size:12px}
+.aside-bottom{margin-top:auto;display:grid;gap:8px}
 main{min-width:0;display:flex;flex-direction:column;height:100dvh}.top{padding:15px 23px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;align-items:center;background:#0c22339c;backdrop-filter:blur(20px)}
 h1{font-size:18px;margin:0}.subtitle{color:var(--muted);font-size:11px}.feed{overflow:auto;flex:1;width:min(920px,100%);margin:auto;padding:28px 20px;display:flex;flex-direction:column;gap:15px}.message{max-width:min(780px,92%);padding:15px 18px;border:1px solid #84dfff1e;border-radius:18px;background:#17344a9c;white-space:pre-wrap;overflow-wrap:anywhere}.message.mine{align-self:flex-end;background:#245175a8}.message .by{font-size:10px;font-weight:750;letter-spacing:.16em;color:var(--cyan);margin-bottom:8px}.message.mine .by{color:#c6c8ff}
 .welcome{margin:auto;text-align:center;max-width:520px}.orb{margin:0 auto 20px;width:78px;height:78px;border:2px solid var(--cyan);border-radius:28px;transform:rotate(45deg);box-shadow:0 0 40px #63daff60;animation:pulse 5s ease-in-out infinite}.orb:after{content:"";display:block;margin:24px;width:28px;height:28px;background:var(--cyan);border-radius:50%;box-shadow:0 0 22px var(--cyan)}@keyframes pulse{50%{box-shadow:0 0 58px #6b8bfa70;transform:rotate(225deg)}}.welcome h2{font-size:clamp(28px,5vw,44px);margin:0}.welcome p{color:var(--muted)}
@@ -32,6 +37,7 @@ h1{font-size:18px;margin:0}.subtitle{color:var(--muted);font-size:11px}.feed{ove
     <a class="brand" href="./">PL<b>QNX</b></a>
     <div class="label">CORE · SAVED CONVERSATIONS</div>
     <button class="btn primary" id="newChat" type="button">＋ New conversation</button>
+    <input class="search" id="chatSearch" type="search" placeholder="Search saved chats…" aria-label="Search saved conversations" autocomplete="off">
     <div class="list" id="conversations" aria-label="Saved conversations"></div>
     <div class="aside-bottom"><div class="small">Private beta · Up to 25 requests per user per day. Never send sensitive information.</div><button class="btn" id="logout" type="button">Sign out</button></div>
   </aside>
@@ -105,13 +111,28 @@ function bubble(role,text){
   const by=document.createElement("div");by.className="by";
   by.textContent=role==="user"?"YOU":"PLQNX CORE";
   const content=document.createElement("div");content.textContent=text;
-  wrapper.append(by,content);el("feed").append(wrapper);
+  wrapper.append(by,content);
+  if(role==="model" && text!=="Thinking…"){
+    const copy=document.createElement("button");copy.type="button";copy.className="copy-response";
+    copy.textContent="Copy response";copy.setAttribute("aria-label","Copy AI response");
+    copy.addEventListener("click",async()=>{
+      try{await navigator.clipboard.writeText(content.textContent);copy.textContent="Copied ✓";}
+      catch{copy.textContent="Copy unavailable";}
+    });wrapper.append(copy);
+  }
+  el("feed").append(wrapper);
   el("feed").scrollTop=el("feed").scrollHeight;
   return wrapper;
 }
 function renderList(){
   el("conversations").replaceChildren();
-  for(const c of convos){
+  const term=el("chatSearch").value.trim().toLocaleLowerCase();
+  const matches=convos.filter(c=>c.title.toLocaleLowerCase().includes(term));
+  if(term && !matches.length){
+    const empty=document.createElement("div");empty.className="empty-list";
+    empty.textContent="No matching conversations.";el("conversations").append(empty);
+  }
+  for(const c of matches){
     const button=document.createElement("button");button.type="button";
     button.className="conversation"+(c.id===current?" active":"");
     const span=document.createElement("span");span.textContent=c.title;
@@ -184,6 +205,12 @@ el("chatForm").addEventListener("submit",async event=>{
     if(!current){const c=await call("/v1/conversations","POST",{title:"New chat"});current=c.id}
     const data=await call("/v1/chat","POST",{conversationId:current,message});
     waiting.querySelector("div:last-child").textContent=data.answer;
+    const copy=document.createElement("button");copy.type="button";copy.className="copy-response";
+    copy.textContent="Copy response";
+    copy.addEventListener("click",async()=>{
+      try{await navigator.clipboard.writeText(data.answer);copy.textContent="Copied ✓";}
+      catch{copy.textContent="Copy unavailable";}
+    });waiting.append(copy);
     el("chatTitle").textContent=data.title;
     status("Saved · "+data.remainingToday+" requests remaining today");
     await loadList();
@@ -193,6 +220,7 @@ el("chatForm").addEventListener("submit",async event=>{
   }finally{busy=false;el("send").disabled=false;el("prompt").focus()}
 });
 el("newChat").addEventListener("click",newChat);
+el("chatSearch").addEventListener("input",renderList);
 el("deleteChat").addEventListener("click",async()=>{
   if(!current||busy||!confirm("Permanently delete this conversation?"))return;
   try{
