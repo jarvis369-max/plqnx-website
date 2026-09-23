@@ -35,3 +35,11 @@ The site stores the Worker URL locally in your browser and the beta code only in
 ## 5. Important for ₹0 additional budget
 
 Keep the code invite-only and request access code confidential. Check your Gemini project for billing status, API model availability, request quotas and rate limits. The Worker has input-length and output-length bounds but **no distributed per-user quota**, so it is NOT ready for public unlimited use. Before a public release, add real user authentication, durable per-user rate limiting and abuse controls. Free Gemini API prompts may be used by Google for product improvement; do not test with sensitive information.
+
+## Conversation context upgrade
+
+The current GitHub Pages website now includes **New chat** and sends the last six complete user/AI exchanges to your Worker. Messages are held in browser memory for the current page only and are cleared on refresh or when New chat is pressed. They are not stored in PLQNX's database.
+
+**Important:** GitHub Pages updates automatically, but the Cloudflare Worker does NOT. To enable conversation memory, open your Worker in Cloudflare, edit its code and replace it with the latest `backend/worker.js` in this repository. Then deploy. No secret values need to change.
+
+The backend validates the conversation structure and message lengths. It still uses a shared beta code; do not release it as a public unlimited chatbot. Follow up with proper accounts, durable per-user quotas and monitoring before public launch.
