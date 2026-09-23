@@ -81,27 +81,40 @@ export default {
     const path=new URL(request.url).pathname,method=request.method;
     if(!env.DB||!env.GEMINI_API_KEY||!env.BETA_ACCESS_CODE)
       return reply({error:"Backend missing DB binding or secrets."},503,origin);
+    let diagnosticStage="request";
     try {
       if(path==="/v1/status"&&method==="GET")
         return reply({version:"persistent-v1",accounts:true,permanentMemory:true},200,origin);
       if(path==="/v1/register"&&method==="POST"){
+        diagnosticStage="registration_invitation";
         if((request.headers.get("X-Beta-Code")||"")!==env.BETA_ACCESS_CODE)
           return reply({error:"Private beta invitation code required."},403,origin);
+        diagnosticStage="registration_parse";
         const {username,password}=await payload(request);
         if(typeof username!=="string"||! /^[a-zA-Z][a-zA-Z0-9_]{2,19}$/.test(username)||
            typeof password!=="string"||password.length<12||password.length>128)
           return reply({error:"Username: 3–20 letters/numbers/underscores. Password: 12–128 characters."},400,origin);
+        diagnosticStage="registration_user_count";
         const count=await env.DB.prepare("SELECT COUNT(*) AS n FROM users").first();
         if(count.n>=5)return reply({error:"Private beta registration is full."},403,origin);
+        diagnosticStage="registration_password_hash";
         const salt=token(),hashed=await passwordHash(password,salt),id=random();
+        diagnosticStage="registration_insert_user";
         try{
           await env.DB.prepare("INSERT INTO users(id,username,password_salt,password_hash) VALUES(?,?,?,?)")
             .bind(id,username,salt,hashed).run();
-        }catch{return reply({error:"Username is unavailable."},409,origin);}
+        }catch(error){
+          if(/UNIQUE constraint failed/i.test(String(error?.message||"")))
+            return reply({error:"Username is unavailable."},409,origin);
+          console.error("PLQNX registration database insert failed:",error?.name||"Error");
+          return reply({error:"Registration database insert failed.",code:"registration_insert_user"},500,origin);
+        }
+        diagnosticStage="registration_create_session";
         const s=await createSession(env.DB,id);
         return reply({username, ...s},201,origin);
       }
       if(path==="/v1/login"&&method==="POST"){
+        diagnosticStage="login";
         const {username,password}=await payload(request);
         if(typeof username!=="string"||typeof password!=="string"||
            username.length>20||password.length>128)
@@ -219,7 +232,8 @@ export default {
     }catch(error){
       if(/Invalid JSON|Request is too large|Invalid request/.test(error.message))
         return reply({error:error.message},400,origin);
-      return reply({error:"Server error. Check your Worker deployment and D1 binding."},500,origin);
+      console.error("PLQNX backend failure at",diagnosticStage,error?.name||"Error");
+      return reply({error:"Server error at "+diagnosticStage+". Share this stage name, not any credentials.",code:diagnosticStage},500,origin);
     }
   }
 };
