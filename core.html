@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#071120">
+<meta name="theme-color" content="#faf8f4">
 <title>PLQNX CORE | Private Beta</title>
 <style>
 :root{color-scheme:dark;--bg:#07111f;--glass:#102841b8;--line:#8de7ff30;--cyan:#84eaff;--white:#eaf7ff;--muted:#91acc4}
@@ -43,7 +43,7 @@ h1{font-size:18px;margin:0}.subtitle{color:var(--muted);font-size:11px}.feed{ove
 main{height:100dvh}.top{padding:10px 12px}.top h1{font-size:15px}
 .feed{padding:16px 12px}.message{max-width:96%;padding:12px}
 .composer{padding:10px 12px}.footer-note{font-size:9px;padding:4px 12px 9px}
-#username{display:none}#deleteChat{font-size:11px;padding:8px 10px}
+#username{display:none}#deleteChat,#exportChat{font-size:11px;padding:8px 10px}
 }
 @media(prefers-reduced-motion:reduce){.layout aside{transition:none}}
 @media(prefers-reduced-motion:reduce){.orb{animation:none}}
@@ -105,7 +105,7 @@ aside{background:#fffefaeF;border-color:#eae5dd;box-shadow:9px 0 35px #5148390d}
     <div class="aside-bottom"><div class="small">Private beta · Up to 25 requests per user per day. Never send sensitive information.</div><button class="btn" id="logout" type="button">Sign out</button></div>
   </aside>
   <main>
-    <div class="top"><button class="btn sidebar-toggle" id="openSidebar" type="button" aria-label="Open saved conversations" aria-expanded="true">☰ Menu</button><div style="flex:1;min-width:0"><h1 id="chatTitle">PLQNX CORE</h1><div class="subtitle" id="status" aria-live="polite">Checking backend…</div></div><div><span class="small" id="username"></span> <button class="btn danger hidden" id="deleteChat" type="button">Delete chat</button></div></div>
+    <div class="top"><button class="btn sidebar-toggle" id="openSidebar" type="button" aria-label="Open saved conversations" aria-expanded="true">☰ Menu</button><div style="flex:1;min-width:0"><h1 id="chatTitle">PLQNX CORE</h1><div class="subtitle" id="status" aria-live="polite">Checking backend…</div></div><div><span class="small" id="username"></span> <button class="btn hidden" id="exportChat" type="button" title="Download this conversation as a text file">↓ Export</button> <button class="btn danger hidden" id="deleteChat" type="button">Delete chat</button></div></div>
     <div class="feed" id="feed" aria-live="polite"><div class="welcome" id="welcome"><div class="orb"></div><h2>From the smallest to the infinite.</h2><p>Private beta with saved chats. Sign in to begin.</p></div></div>
     <form class="composer" id="chatForm"><textarea id="prompt" placeholder="Ask PLQNX CORE anything…" maxlength="1000" rows="2" required></textarea><button class="btn primary" id="send" type="submit">Send ↗</button></form>
     <div class="footer-note">PLQNX is an early-stage AI project. Responses may be inaccurate. Avoid sharing sensitive information.</div>
@@ -314,6 +314,7 @@ async function openChat(id){
     for(const m of data.messages)bubble(m.role,m.content);
     if(!data.messages.length)welcome("A new conversation. What shall we explore?");
     el("deleteChat").classList.remove("hidden");
+    el("exportChat").classList.remove("hidden");
     renderList();status("Saved memory active");
   }catch(error){status(error.message)}
 }
@@ -380,10 +381,44 @@ el("chatForm").addEventListener("submit",async event=>{
 });
 el("newChat").addEventListener("click",()=>{closeDrawer();newChat()});
 el("chatSearch").addEventListener("input",renderList);
+// Export the currently loaded conversation. The current beta API returns up to
+// 150 messages, so warn if a conversation may have additional older messages.
+el("exportChat").addEventListener("click",async()=>{
+  if(!access||!current||busy)return;
+  const button=el("exportChat");button.disabled=true;
+  try{
+    status("Preparing conversation download…");
+    const data=await call("/v1/conversations/"+current);
+    if(data.messages.length===150&&!confirm(
+      "This beta loads up to 150 messages per conversation. This export may be incomplete. Download it anyway?"
+    )){status("Export cancelled.");return}
+    const content=[
+      "PLQNX CORE · "+data.conversation.title,
+      "Exported: "+new Date().toLocaleString(),
+      data.messages.length===150?"Note: The beta loads up to 150 messages; older messages may be omitted.":"",
+      ...data.messages.flatMap(m=>["",m.role==="user"?"YOU":"PLQNX CORE",m.content])
+    ].join("\\n");
+    const blob=new Blob([content],{type:"text/plain;charset=utf-8"});
+    const url=URL.createObjectURL(blob);
+    const link=document.createElement("a");
+    link.href=url;link.download="PLQNX-"+data.conversation.title
+      .replace(/[^a-z0-9_-]+/gi,"-").slice(0,45)+".txt";
+    document.body.append(link);link.click();link.remove();
+    URL.revokeObjectURL(url);status("Conversation exported as text.");
+  }catch(error){status("Export failed: "+error.message)}
+  finally{button.disabled=false}
+});
+// Ctrl/Cmd+K opens the saved-chat search field.
+document.addEventListener("keydown",e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="k"&&access){
+    e.preventDefault();openDrawer();el("chatSearch").focus();
+  }
+});
 el("deleteChat").addEventListener("click",async()=>{
   if(!current||busy||!confirm("Permanently delete this conversation?"))return;
   try{
     await call("/v1/conversations/"+current,"DELETE");current="";
+    el("exportChat").classList.add("hidden");el("deleteChat").classList.add("hidden");
     await loadList();
     if(convos.length)await openChat(convos[0].id);else await newChat();
   }catch(error){status(error.message)}
@@ -391,6 +426,7 @@ el("deleteChat").addEventListener("click",async()=>{
 el("logout").addEventListener("click",async()=>{
   try{if(access)await call("/v1/logout","POST")}catch{}
   access="";current="";name="";
+  el("exportChat").classList.add("hidden");el("deleteChat").classList.add("hidden");
   sessionStorage.removeItem("plqnx_v3_token");
   sessionStorage.removeItem("plqnx_v3_name");
   welcome("Sign in to reopen your saved conversations.");
