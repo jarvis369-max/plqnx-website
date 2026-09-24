@@ -83,3 +83,31 @@ body.eclipse{--e-bg:#faf8f4;--e-bg2:#fffdf9;--e-panel:#fffefae0;--e-panel2:#f8f0
 .eclipse .v7-gradient{background:linear-gradient(110deg,#a68865,#d3a79f 49%,#8f9f82)!important;-webkit-background-clip:text!important;background-clip:text!important;color:transparent!important}
 @media(max-width:560px){.eclipse-title{font-size:clamp(40px,11vw,62px)!important;line-height:1.19!important;letter-spacing:-.045em!important;padding:.1em .05em .18em!important}.eclipse-home{padding-top:125px!important}}
 @media(prefers-reduced-motion:reduce){.eclipse-title{transition:none}}
+
+/* PLQNX 8.3 SOFT LIGHT: legible full-size hero and consistent bright surfaces */
+html,body.eclipse{color-scheme:light!important;background:#faf8f4!important}
+body.eclipse .eclipse-home{overflow:visible!important;padding-top:clamp(115px,13vw,168px)!important}
+body.eclipse .eclipse-shell,body.eclipse .eclipse-hero{overflow:visible!important}
+body.eclipse .eclipse-title{
+ display:block!important;position:relative!important;max-width:min(1080px,100%)!important;
+ width:100%!important;min-height:0!important;height:auto!important;overflow:visible!important;
+ font-size:clamp(40px,6.45vw,86px)!important;line-height:1.34!important;
+ letter-spacing:-.04em!important;text-wrap:balance!important;overflow-wrap:break-word!important;
+ margin:clamp(22px,3vw,35px) auto 22px!important;padding:.1em .08em .27em!important;
+ background:none!important;-webkit-text-fill-color:#45382e!important;color:#45382e!important;
+}
+body.eclipse .eclipse-title span{color:#a58d7a!important;-webkit-text-fill-color:transparent!important;background:linear-gradient(110deg,#a58a70,#cba79d 53%,#829e8b)!important;background-clip:text!important;-webkit-background-clip:text!important}
+body.eclipse #eclipseField{background:transparent!important;opacity:.20!important;mix-blend-mode:screen!important}
+body.eclipse .eclipse-status-grid .eclipse-glass,body.eclipse .intent-workbench{color:#43372c!important}
+body.eclipse .studio-generated,body.eclipse .studio-results,body.eclipse .studio-output{color:#4d4035!important}
+body.eclipse .studio-field textarea:focus{outline:2px solid #c0a58b!important;outline-offset:2px}
+body.eclipse .v7-preview aside *,body.eclipse .v7-preview main *{color:#5d5043}
+body.eclipse .v7-preview .v7-logo{color:#4d3e33}
+body.eclipse .eclipse-top-actions .optional{color:#665447}
+@media(max-width:760px){
+ body.eclipse .eclipse-title{font-size:clamp(38px,8.9vw,64px)!important;line-height:1.36!important;letter-spacing:-.033em!important;padding:.11em .09em .29em!important}
+ body.eclipse .eclipse-home{padding-top:115px!important}
+}
+@media(max-width:420px){
+ body.eclipse .eclipse-title{font-size:clamp(35px,10vw,44px)!important;line-height:1.39!important;letter-spacing:-.027em!important;padding:.12em .04em .34em!important}
+}
