@@ -549,9 +549,16 @@ async function call(path,method="GET",body,invitation){
   if(access)headers.Authorization="Bearer "+access;
   if(invitation)headers["X-Beta-Code"]=invitation;
   let res;
-  try{res=await fetch(API+path,{method,headers,body:body===undefined?undefined:JSON.stringify(body)})}
-  catch{throw Error("Cannot reach the Worker. Check that the V3 backend is deployed.")}
-  let data;try{data=await res.json()}catch{throw Error("Unexpected backend response. Deploy Worker V3 first.")}
+  try{
+    const options={method,headers,body:body===undefined?undefined:JSON.stringify(body)};
+    if(path==="/v1/chat")options.signal=AbortSignal.timeout(55000);
+    res=await fetch(API+path,options);
+  }catch(error){
+    if(error?.name==="TimeoutError"||error?.name==="AbortError")
+      throw Error("The AI response timed out. Restore your message and try again. If this repeats, the AI backend needs its timeout update.");
+    throw Error("Cannot reach the AI service. Check your connection or try again shortly.");
+  }
+  let data;try{data=await res.json()}catch{throw Error("Unexpected backend response. Check the Worker deployment.")}
   if(!res.ok)throw Error(data.error||"Request failed.");
   return data;
 }
@@ -778,7 +785,7 @@ el("chatForm").addEventListener("submit",async event=>{
     if(window.plqnxSoundEnabled?.())window.plqnxChime?.("complete");
     await loadList();renderReturnBrief();
   }catch(error){
-    waiting.classList.remove("thinking");waiting.querySelector("div:nth-child(2)").textContent="Unable to reply: "+error.message;
+    waiting.classList.remove("thinking");waiting.querySelector("div:nth-child(2)").textContent="Unable to reply: "+( /timeout|timed out|aborted/i.test(error.message)?"The AI service took too long. Your message is available below to restore.":error.message);
     const restore=document.createElement("button");restore.type="button";restore.className="copy-response";
     restore.textContent="Restore my message";
     restore.addEventListener("click",()=>{
