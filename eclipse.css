@@ -8,3 +8,16 @@ html{background:#020204;color-scheme:dark}body.eclipse{background:var(--e-bg)!im
 #historyOpt[aria-pressed="true"]{border-color:rgba(168,140,255,.55);background:rgba(168,140,255,.14);color:#d9c9ff}
 @media(max-width:560px){.eclipse-top-actions #historyOpt{display:inline-flex!important;padding:8px 7px;font-size:10px}.eclipse-top-actions #soundToggle,.eclipse-top-actions #historyClear{display:none!important}.command-actions{gap:7px}.command-language select{max-width:68px}}
 @media(prefers-reduced-motion:reduce){#eclipseField{display:none!important}.eclipse-glow{filter:blur(110px)}}
+
+/* ECLIPSE 8.2 · contextual depth. Opt-in memory remains user-controlled. */
+body.eclipse[data-e-daypart=morning] .eclipse-status-grid{grid-template-columns:1.15fr .85fr}
+body.eclipse[data-e-daypart=morning] .eclipse-home{background:radial-gradient(ellipse at 85% 6%,#355b9a10,transparent 45%)}
+body.eclipse[data-e-daypart=night] .eclipse-hero{max-width:940px;margin-inline:auto}
+body.eclipse[data-e-daypart=night] .eclipse-status-grid{opacity:.87}
+body.eclipse[data-e-context=create] .command-core{border-color:#ff99d988;box-shadow:0 0 0 1px #f59bdf24,0 18px 85px #b84ed52e}
+body.eclipse[data-e-context=analyze] .command-core{border-color:#86eaff88;box-shadow:0 0 0 1px #72d9fb24,0 18px 85px #42acd329}
+body.eclipse[data-e-context=build] .command-core{border-color:#aa95ff88;box-shadow:0 0 0 1px #9e87fe24,0 18px 85px #7961e529}
+body.eclipse[data-e-context=learn] .command-core{border-color:#c5f7a277}
+body.eclipse[data-e-context=focus] .eclipse-glow{opacity:.32}
+@media(max-width:820px){body.eclipse[data-e-daypart=morning] .eclipse-status-grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){body.eclipse .command-core{transition:none}}
