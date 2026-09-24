@@ -43,7 +43,7 @@ h1{font-size:18px;margin:0}.subtitle{color:var(--muted);font-size:11px}.feed{ove
 main{height:100dvh}.top{padding:10px 12px}.top h1{font-size:15px}
 .feed{padding:16px 12px}.message{max-width:96%;padding:12px}
 .composer{padding:10px 12px}.footer-note{font-size:9px;padding:4px 12px 9px}
-#username{display:none}#deleteChat,#exportChat{font-size:11px;padding:8px 10px}
+#username{display:none}#deleteChat,#exportChat,#renameChat{font-size:11px;padding:8px 10px}
 }
 @media(prefers-reduced-motion:reduce){.layout aside{transition:none}}
 @media(prefers-reduced-motion:reduce){.orb{animation:none}}
@@ -120,7 +120,7 @@ aside{background:#fffefaeF;border-color:#eae5dd;box-shadow:9px 0 35px #5148390d}
     <div class="aside-bottom"><div class="small">Private beta · Up to 25 requests per user per day. Never send sensitive information.</div><button class="btn" id="logout" type="button">Sign out</button></div>
   </aside>
   <main>
-    <div class="top"><button class="btn sidebar-toggle" id="openSidebar" type="button" aria-label="Open saved conversations" aria-expanded="true">☰ Menu</button><div style="flex:1;min-width:0"><h1 id="chatTitle">PLQNX CORE</h1><div class="subtitle" id="status" aria-live="polite">Checking backend…</div></div><div><span class="small" id="username"></span> <button class="btn hidden" id="exportChat" type="button" title="Download this conversation as a text file">↓ Export</button> <button class="btn danger hidden" id="deleteChat" type="button">Delete chat</button></div></div>
+    <div class="top"><button class="btn sidebar-toggle" id="openSidebar" type="button" aria-label="Open saved conversations" aria-expanded="true">☰ Menu</button><div style="flex:1;min-width:0"><h1 id="chatTitle">PLQNX CORE</h1><div class="subtitle" id="status" aria-live="polite">Checking backend…</div></div><div><span class="small" id="username"></span> <button class="btn hidden" id="renameChat" type="button" title="Rename this conversation">✎ Rename</button> <button class="btn hidden" id="exportChat" type="button" title="Download this conversation as a text file">↓ Export</button> <button class="btn danger hidden" id="deleteChat" type="button">Delete chat</button></div></div>
     <div class="feed" id="feed" aria-live="polite"><div class="welcome" id="welcome"><div class="orb"></div><h2>From the smallest to the infinite.</h2><p>Private beta with saved chats. Sign in to begin.</p></div></div>
     <form class="composer" id="chatForm"><textarea id="prompt" placeholder="Ask PLQNX CORE anything…" maxlength="1000" rows="2" required></textarea><button class="btn primary" id="send" type="submit">Send ↗</button></form>
     <div class="footer-note">PLQNX is an early-stage AI project. Responses may be inaccurate. Avoid sharing sensitive information.</div>
@@ -148,7 +148,7 @@ const API="https://plqnx-core-beta.sasankm2009.workers.dev";
 const el=id=>document.getElementById(id);
 let access=sessionStorage.getItem("plqnx_v3_token")||"";
 let name=sessionStorage.getItem("plqnx_v3_name")||"";
-let current="",mode="login",busy=false,convos=[];
+let current="",mode="login",busy=false,convos=[],canRename=false;
 const status=t=>el("status").textContent=t;
 function resizePrompt(){
   const input=el("prompt");input.style.height="auto";
@@ -336,6 +336,7 @@ async function openChat(id){
     if(!data.messages.length)welcome("A new conversation. What shall we explore?");
     el("deleteChat").classList.remove("hidden");
     el("exportChat").classList.remove("hidden");
+    el("renameChat").classList.toggle("hidden",!canRename);
     renderList();status("Saved memory active");
   }catch(error){status(error.message)}
 }
@@ -348,7 +349,7 @@ async function newChat(){
 }
 async function ready(){
   try{
-    const info=await call("/v1/status");if(info.version!=="persistent-v1")
+    const info=await call("/v1/status");canRename=Boolean(info.renameConversation);if(info.version!=="persistent-v1")
       throw Error("Deploy Worker V3 to enable saved conversations.");
     if(access){
       try{
@@ -408,6 +409,23 @@ el("chatForm").addEventListener("submit",async event=>{
 });
 el("newChat").addEventListener("click",()=>{closeDrawer();newChat()});
 el("chatSearch").addEventListener("input",renderList);
+el("renameChat").addEventListener("click",async()=>{
+  if(!current||busy||!canRename)return;
+  const previous=convos.find(c=>c.id===current)?.title||el("chatTitle").textContent;
+  const proposed=window.prompt("Choose a new conversation title (up to 68 characters):",previous);
+  if(proposed===null)return;
+  const title=proposed.replace(/\s+/g," ").trim();
+  if(!title||title.length>68){status("Use a title between 1 and 68 characters.");return}
+  const button=el("renameChat");button.disabled=true;
+  try{
+    const result=await call("/v1/conversations/"+current,"PATCH",{title});
+    el("chatTitle").textContent=result.conversation.title;
+    const item=convos.find(c=>c.id===current);
+    if(item)item.title=result.conversation.title;
+    renderList();status("Conversation renamed and saved.");
+  }catch(error){status("Could not rename: "+error.message)}
+  finally{button.disabled=false}
+});
 // Export the currently loaded conversation. The current beta API returns up to
 // 150 messages, so warn if a conversation may have additional older messages.
 el("exportChat").addEventListener("click",async()=>{
@@ -445,7 +463,7 @@ el("deleteChat").addEventListener("click",async()=>{
   if(!current||busy||!confirm("Permanently delete this conversation?"))return;
   try{
     await call("/v1/conversations/"+current,"DELETE");current="";
-    el("exportChat").classList.add("hidden");el("deleteChat").classList.add("hidden");
+    el("renameChat").classList.add("hidden");el("exportChat").classList.add("hidden");el("deleteChat").classList.add("hidden");
     await loadList();
     if(convos.length)await openChat(convos[0].id);else await newChat();
   }catch(error){status(error.message)}
@@ -453,7 +471,7 @@ el("deleteChat").addEventListener("click",async()=>{
 el("logout").addEventListener("click",async()=>{
   try{if(access)await call("/v1/logout","POST")}catch{}
   access="";current="";name="";
-  el("exportChat").classList.add("hidden");el("deleteChat").classList.add("hidden");
+  el("renameChat").classList.add("hidden");el("exportChat").classList.add("hidden");el("deleteChat").classList.add("hidden");
   sessionStorage.removeItem("plqnx_v3_token");
   sessionStorage.removeItem("plqnx_v3_name");
   welcome("Sign in to reopen your saved conversations.");
