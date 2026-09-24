@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#faf8f4">
-<meta name="color-scheme" content="light">
-<meta name="plqnx-design" content="atelier-7.0"><meta name="description" content="Meet PLQNX, an independent pre-launch AI project. Explore our live invite-only CORE assistant for learning, coding and creative ideas.">
+<meta name="theme-color" content="#020204">
+<meta name="color-scheme" content="dark">
+<meta name="plqnx-design" content="eclipse-8.0"><meta name="description" content="Meet PLQNX, an independent pre-launch AI project. Explore our live invite-only CORE assistant for learning, coding and creative ideas.">
 <title>PLQNX | Intelligent Ideas, Infinite Possibilities</title>
 <meta name="robots" content="index,follow">
 <link rel="canonical" href="https://jarvis369-max.github.io/plqnx-website/">
@@ -119,29 +119,47 @@ main section:not(.hero){position:relative;scroll-margin-top:100px}
 @media(prefers-reduced-motion:reduce){.space:before,.reactor,.reactor:before,.reactor:after,.lumi-hero-note{animation:none!important}.lumi-reveal{opacity:1;transform:none;filter:none;transition:none}.button,.card,.glass,.road>div{transition:none}html{scroll-behavior:auto}}
 
 </style>
-<link rel="stylesheet" href="./site.css">
+<link rel="stylesheet" href="./site.css">\n<link rel="stylesheet" href="./eclipse.css">
 </head>
-<body>
-<a class="skip" href="#main">Skip to main content</a><div class="v7-atmosphere" aria-hidden="true"></div>
-<header class="v7-header"><nav class="v7-container v7-nav" aria-label="Main navigation">
-<a class="v7-logo" href="./"><i aria-hidden="true">✧</i><span>PL<b>QNX</b><small>AI LAB · PRE-LAUNCH</small></span></a>
-<button class="v7-menu" type="button" aria-label="Toggle menu" aria-expanded="false">☰</button>
-<div class="v7-links">
-<a href="#products">Products</a><a href="#capabilities">Capabilities</a><a href="#use-cases">Use cases</a><a href="./about.html">About</a><a href="./roadmap.html">Roadmap</a>
-<a class="v7-button primary" href="./core.html">Enter CORE ↗</a>
-</div></nav></header>
+<body class="eclipse">
+<a class="skip" href="#main">Skip to main content</a>
+<canvas id="eclipseField" aria-hidden="true"></canvas><div class="eclipse-noise" aria-hidden="true"></div><div class="eclipse-glow a" aria-hidden="true"></div><div class="eclipse-glow b" aria-hidden="true"></div>
+<header class="eclipse-top" aria-label="PLQNX command dock">
+  <a class="eclipse-brand" href="./"><i>✧</i><span>PLQNX<small>ADAPTIVE AI · PRIVATE BETA</small></span></a>
+  <div class="eclipse-top-actions">
+    <button class="eclipse-pillbtn optional" id="soundToggle" type="button">Sound off</button>
+    <a class="eclipse-pillbtn optional" href="./about.html">About</a>
+    <a class="eclipse-pillbtn primary" href="./core.html">Open CORE ↗</a>
+  </div>
+</header>
 <main id="main">
-<section class="v7-hero v7-container" id="home">
-<div><div class="v7-kicker">INDEPENDENT AI PROJECT · PRIVATE BETA</div>
-<h1 class="v7-h1">Intelligence for<br><span class="v7-gradient">what comes next.</span></h1>
-<p class="v7-lead">Meet PLQNX. An emerging AI experience for curious minds, thoughtful creators, and people building what's next. Our first product, CORE, is available as an invite-only beta.</p>
-<div class="v7-actions"><a class="v7-button primary" href="./core.html">Launch PLQNX CORE ↗</a><a class="v7-button secondary" href="#preview">See the experience ↓</a><button class="v7-button ghost" type="button" data-demo>Explore scripted demo ✧</button></div>
-<div class="v7-pills"><span class="v7-pill">✦ Saved conversations</span><span class="v7-pill">✦ English + Telugu</span><span class="v7-pill">✦ Built for learning &amp; creation</span></div>
-</div>
-<div class="v7-hero-art" role="img" aria-label="Luminous abstract PLQNX core surrounded by softly rotating orbital rings">
-<div class="v7-ring"></div><div class="v7-ring second"></div><div class="v7-ring third"></div><div class="v7-orb"></div>
-<div class="v7-float one"><strong>PLQNX CORE ✧</strong><span>Your ideas, thoughtfully explored.</span></div>
-<div class="v7-float two"><strong>✧ PRIVATE BETA</strong><span>An early-stage AI product, built to evolve.</span></div>
+<section class="eclipse-home" id="home"><div class="eclipse-shell">
+  <div class="eclipse-hero">
+    <div class="eclipse-kicker">PLQNX 8 · ECLIPSE · ADAPTIVE INTERFACE</div>
+    <h1 class="eclipse-title" id="adaptiveTitle">Turn intent into <span>momentum.</span></h1>
+    <p class="eclipse-lead" id="adaptiveLead">One command can open the right workspace, prompt, or next step without hunting through menus.</p>
+    <div class="command-wrap">
+      <form id="commandForm" class="command-core">
+        <label class="skip" for="commandInput">Tell PLQNX what you want to do</label>
+        <textarea id="commandInput" rows="2" maxlength="1200" placeholder="Tell PLQNX what you want to accomplish…"></textarea>
+        <div class="command-row">
+          <div class="command-meta"><span class="command-mode" id="commandMode">EXPLORE MODE</span><span class="command-speed" id="commandSpeed">adaptive signal</span></div>
+          <div class="command-actions"><button class="command-mic" id="commandMic" type="button" aria-label="Speak your intent">⌁</button><button class="command-send" type="submit">Enter CORE ↗</button></div>
+        </div>
+      </form>
+      <div class="context-strip" aria-label="Starter intents">
+        <button class="context-chip" type="button" data-command="Help me build an AI project from idea to working prototype"><strong>⌘ Build</strong> a project</button>
+        <button class="context-chip" type="button" data-command="Explain a difficult topic clearly and teach me step by step"><strong>◎ Learn</strong> a concept</button>
+        <button class="context-chip" type="button" data-command="Help me create and refine a bold original idea"><strong>✦ Create</strong> something</button>
+        <button class="context-chip" type="button" data-command="Analyze this problem, compare options, and give me a clear decision framework"><strong>▤ Analyze</strong> a problem</button>
+      </div>
+    </div>
+  </div>
+  <div class="predictive" id="predictiveTools" aria-live="polite"></div>
+  <div class="eclipse-status-grid">
+    <article class="eclipse-glass"><div class="eclipse-kicker" id="returnLabel">RECENT INTENT · THIS DEVICE</div><h3>Your return brief</h3><p>PLQNX surfaces your recent command intents locally so you can resume without digging through menus. This is not a claim that an AI agent worked while your browser was closed.</p><div class="return-items" id="returnItems"></div></article>
+    <article class="eclipse-glass live-signal"><div><div class="eclipse-kicker">LIVE ADAPTATION</div><h3>The interface listens to context.</h3><p>Time of day, your current intent and typing rhythm influence the visual state and surfaced tools. Processing stays in your browser until you enter CORE.</p></div><div class="signal-orb" aria-hidden="true"></div></article>
+  </div>
 </div></section>
 <section id="products" class="v7-section soft"><div class="v7-container">
 <div class="v7-eyebrow">THE ECOSYSTEM</div><h2 class="v7-heading">One beginning.<br><span class="v7-gradient">Infinite directions.</span></h2>
@@ -332,5 +350,5 @@ document.querySelectorAll(".card,.glass").forEach(card=>{
 });
 })();
 </script>
-<script src="./site.js" defer></script>
+<script src="./site.js" defer></script>\n<script src="./eclipse.js" defer></script>\n<div class="eclipse-toast" id="eclipseToast" role="status" aria-live="polite"></div>
 </body></html>
