@@ -257,6 +257,14 @@ body[data-core-mode=focus] .core-mode-dock{background:#111421e9}
 body.core-reduce-motion .mode-chip{transition:none}
 @media(max-width:730px){.core-mode-dock{padding:9px;width:calc(100% - 12px)}.core-mode-prompt{width:100%}.mode-chip{font-size:10px;padding:6px 9px}.core-command-open{width:100%}.core-return-brief{width:calc(100% - 12px)}}
 @media(prefers-reduced-motion:reduce){.mode-chip{transition:none}}
+.sr-only{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+.core-speech-language{display:block;flex:none}.core-speech-language select{border:1px solid #e2cebd;background:#fffefa;color:#5f493a;padding:10px 7px;border-radius:11px;font-size:12px;max-width:84px;cursor:pointer}
+.core-mic{flex:none;min-width:45px;min-height:45px;display:inline-grid;place-items:center;font-size:19px;border-radius:15px;background:#faf1e8;border:1px solid #ddc7b1;color:#765944;transition:box-shadow .2s,transform .2s}
+.core-mic:hover{background:#f3e2d2;transform:translateY(-1px)}.core-mic.listening{background:#f3dace;border-color:#c78d84;color:#9a504b;box-shadow:0 0 0 5px #dca9a845;animation:coreMicPulse 1.25s ease-in-out infinite}
+@keyframes coreMicPulse{50%{box-shadow:0 0 0 9px #dca9a819}}
+.core-voice-status{font-size:10px;color:#927865;text-align:center;margin:0;padding:4px 12px 6px;background:#fffefaeb}
+@media(max-width:730px){.composer{gap:6px!important}.core-speech-language select{max-width:70px;font-size:11px;padding:8px 4px}.core-mic{min-width:37px;min-height:42px;font-size:17px}.core-voice-status{font-size:9px;padding:3px 8px 6px}.composer .btn.primary{padding-inline:10px}}
+@media(prefers-reduced-motion:reduce){.core-mic.listening{animation:none}.core-mic{transition:none}}
 </style>
 <link rel="stylesheet" href="./core-light.css">
 </head>
@@ -278,7 +286,13 @@ body.core-reduce-motion .mode-chip{transition:none}
     <div class="feed" id="feed" aria-live="polite"><div class="welcome" id="welcome"><div class="orb"></div><h2>From the smallest to the infinite.</h2><p>Private beta with saved chats. Sign in to begin.</p></div></div>
     <button class="lumina-jump hidden" id="jumpLatest" type="button" aria-label="Scroll to the latest message">↓ Latest</button>
     <div class="eclipse-core-handoff hidden" id="intentHandoff" role="status"><div><strong id="handoffTitle">INTENT IMPORTED</strong><span id="handoffDescription">Your homepage command is ready to send when you choose.</span></div><button id="handoffDismiss" type="button" class="btn">Dismiss</button></div>
-    <form class="composer" id="chatForm"><textarea id="prompt" placeholder="Ask anything. Discover everything…" aria-label="Message PLQNX CORE" maxlength="1000" rows="2" required></textarea><button class="btn primary" id="send" type="submit">Send ↗</button></form>
+    <form class="composer" id="chatForm">
+      <label class="core-speech-language" for="coreSpeechLanguage"><span class="sr-only">Speech language</span><select id="coreSpeechLanguage" aria-label="Voice input language"><option value="en-IN">English</option><option value="te-IN">తెలుగు</option></select></label>
+      <button class="btn core-mic" id="coreMic" type="button" aria-label="Start voice input" aria-pressed="false" title="Dictate in English or Telugu">🎙<span class="sr-only">Microphone</span></button>
+      <textarea id="prompt" placeholder="Ask anything. Discover everything…" aria-label="Message PLQNX CORE" maxlength="1000" rows="2" required></textarea>
+      <button class="btn primary" id="send" type="submit">Send ↗</button>
+    </form>
+    <p class="core-voice-status" id="coreVoiceStatus" role="status" aria-live="polite">Voice input requires microphone permission and browser support. Dictation is never sent automatically.</p>
     <div class="footer-note">PLQNX is an early-stage AI project. Responses may be inaccurate. Avoid sharing sensitive information. <button id="coreSound" type="button" class="core-sound" aria-pressed="false">♪ Sound off</button></div>
   </main>
 </div>
@@ -499,6 +513,48 @@ function offerGuideOnce(){try{if(localStorage.getItem("plqnx_guide_seen"))return
 el("coreTextSize").addEventListener("change",e=>{prefs.text=e.target.value;applyPrefs()});
 el("coreReduceMotion").addEventListener("change",e=>{prefs.reduceMotion=e.target.checked;applyPrefs()});
 el("coreCompact").addEventListener("change",e=>{prefs.compact=e.target.checked;applyPrefs()});
+/* Speech recognition is a browser capability, independent of the paid AI backend.
+   Keep the microphone visible even on unsupported browsers and explain why. */
+const mic=el("coreMic"),micLanguage=el("coreSpeechLanguage"),voiceStatus=el("coreVoiceStatus");
+const SpeechAPI=window.SpeechRecognition||window.webkitSpeechRecognition;
+let recognition=null,listening=false,voiceBase="";
+function stopMic(){
+ if(recognition&&listening){try{recognition.stop()}catch{}}
+}
+function setMicState(active){
+ listening=active;mic.setAttribute("aria-pressed",String(active));mic.classList.toggle("listening",active);
+ mic.setAttribute("aria-label",active?"Stop voice input":"Start voice input");
+ mic.title=active?"Stop dictation":"Dictate in English or Telugu";
+}
+if(!SpeechAPI){
+ mic.disabled=true;mic.title="Voice recognition is not available in this browser";
+ voiceStatus.textContent="Voice recognition is unavailable here. Use a supported browser with microphone access, or type your message.";
+}else{
+ mic.addEventListener("click",()=>{
+  if(listening){stopMic();return}
+  try{
+   recognition=new SpeechAPI();
+   recognition.lang=micLanguage.value;recognition.interimResults=true;recognition.continuous=false;
+   voiceBase=el("prompt").value.trim();
+   recognition.onstart=()=>{setMicState(true);voiceStatus.textContent="Listening in "+(micLanguage.value==="te-IN"?"Telugu":"English")+"… Tap the microphone to stop."};
+   recognition.onresult=event=>{
+    const transcript=Array.from(event.results).map(r=>r[0]?.transcript||"").join(" ").trim();
+    el("prompt").value=(voiceBase?voiceBase+" ":"")+transcript;
+    el("prompt").dispatchEvent(new Event("input",{bubbles:true}));
+   };
+   recognition.onerror=event=>{
+    const messages={"not-allowed":"Microphone access was denied. Allow microphone permission in your browser's site settings.","service-not-allowed":"Your browser or speech service blocked voice recognition.","no-speech":"No speech detected. Tap the microphone to try again.","audio-capture":"No microphone was found. Check your device's input settings.","network":"Voice recognition needs a working browser speech service. Check your connection.","language-not-supported":"This browser's speech service does not support the selected language."};
+    voiceStatus.textContent=messages[event.error]||"Voice recognition stopped. You can still type your message.";
+   };
+   recognition.onend=()=>{
+    setMicState(false);
+    if(voiceStatus.textContent.startsWith("Listening"))voiceStatus.textContent="Dictation ready. Review your text, then press Send.";
+   };
+   recognition.start();
+  }catch{setMicState(false);voiceStatus.textContent="Could not start the microphone. Check permission and try again."}
+ });
+ micLanguage.addEventListener("change",()=>{if(listening)stopMic();voiceStatus.textContent="Voice language set to "+(micLanguage.value==="te-IN"?"Telugu":"English")+". Tap the microphone to begin.";});
+}
 function resizePrompt(){
   const input=el("prompt");input.style.height="auto";
   input.style.height=Math.min(input.scrollHeight,170)+"px";
@@ -767,7 +823,7 @@ el("auth").addEventListener("submit",async event=>{
 el("chatForm").addEventListener("submit",async event=>{
   event.preventDefault();if(busy||!access)return;
   const message=el("prompt").value.trim();if(!message)return;
-  incomingPrompt="";handoff.classList.add("hidden");
+  incomingPrompt="";handoff.classList.add("hidden");stopMic();
   busy=true;el("send").disabled=true;el("prompt").value="";resizePrompt();
   bubble("user",message);const waiting=bubble("model","Thinking…");waiting.classList.add("thinking");
   try{
