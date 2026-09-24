@@ -111,3 +111,40 @@ body.eclipse .eclipse-top-actions .optional{color:#665447}
 @media(max-width:420px){
  body.eclipse .eclipse-title{font-size:clamp(35px,10vw,44px)!important;line-height:1.39!important;letter-spacing:-.027em!important;padding:.12em .04em .34em!important}
 }
+
+/* PLQNX 8.3.1 · headline typography repair and final soft-light safety layer */
+body.eclipse .eclipse-hero{overflow:visible!important;width:100%;max-width:1100px!important;min-width:0}
+body.eclipse .eclipse-title{
+ display:block!important;overflow:visible!important;white-space:normal!important;
+ max-width:100%!important;width:100%!important;height:auto!important;min-height:0!important;
+ font-size:clamp(37px,6.1vw,83px)!important;
+ line-height:1.29!important;letter-spacing:-.045em!important;
+ text-wrap:balance!important;overflow-wrap:normal!important;
+ margin:22px auto 18px!important;padding:.13em .025em .25em!important;
+ -webkit-text-fill-color:#44392f!important;color:#44392f!important;
+}
+body.eclipse .eclipse-title span{
+ display:block!important;max-width:100%;overflow:visible!important;
+ font:inherit;line-height:1.31!important;letter-spacing:inherit;
+ background:linear-gradient(105deg,#a68a70,#caa9a2 55%,#859f8d)!important;
+ -webkit-background-clip:text!important;background-clip:text!important;
+ -webkit-text-fill-color:transparent!important;
+}
+body.eclipse .eclipse-home,body.eclipse .eclipse-shell{overflow:visible!important}
+body.eclipse .eclipse-home{background:radial-gradient(ellipse at 79% 7%,#f3ded0aa,transparent 43%),radial-gradient(ellipse at 6% 78%,#e5ece2aa,transparent 48%),#faf8f4!important}
+body.eclipse #eclipseField{background:transparent!important;mix-blend-mode:multiply!important;opacity:.48!important}
+body.eclipse .eclipse-top,body.eclipse .command-core,body.eclipse .eclipse-glass{backdrop-filter:blur(26px) saturate(1.1)}
+body.eclipse .command-core:focus-within{border-color:#bfa58d;box-shadow:0 20px 66px #b79a7b37,0 0 0 4px #e2cab446}
+body.eclipse[data-e-context=create] .command-core{border-color:#dec4bb!important;box-shadow:0 18px 64px #d9bcbf32!important}
+body.eclipse[data-e-context=analyze] .command-core{border-color:#b9d0c6!important;box-shadow:0 18px 64px #abc9bd2c!important}
+body.eclipse[data-e-context=build] .command-core{border-color:#d2c5d9!important;box-shadow:0 18px 64px #cabcd52e!important}
+body.eclipse[data-e-context=learn] .command-core{border-color:#d8ddbb!important}
+@media(max-width:760px){
+ body.eclipse .eclipse-title{font-size:clamp(36px,8vw,61px)!important;line-height:1.29!important;letter-spacing:-.033em!important;padding:.14em .02em .27em!important}
+ body.eclipse .eclipse-title span{line-height:1.33!important}
+}
+@media(max-width:420px){
+ body.eclipse .eclipse-title{font-size:clamp(34px,9.2vw,43px)!important;line-height:1.32!important;letter-spacing:-.027em!important;padding:.14em .01em .3em!important}
+ body.eclipse .eclipse-title span{line-height:1.35!important}
+}
+@media(prefers-reduced-motion:reduce){body.eclipse .eclipse-title,body.eclipse .eclipse-title span{transition:none!important}}
