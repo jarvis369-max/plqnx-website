@@ -238,6 +238,7 @@ body.core-reduce-motion .feed{scroll-behavior:auto!important}
 body.core-reduce-motion .btn,body.core-reduce-motion .conversation,body.core-reduce-motion .lumina-prompt{transition:none!important}
 @media(max-width:730px){#settingsOpen{min-width:34px}.settings-panel{gap:12px}}
 .core-guide-panel{min-height:365px}.core-guide-stage{min-height:165px;padding:13px 0}.guide-symbol{display:grid;place-items:center;width:58px;height:58px;border-radius:20px;background:linear-gradient(130deg,#f5e2d0,#ecede1);border:1px solid #e4d0ba;font-size:30px;color:#a57c58;box-shadow:0 10px 25px #a9846321}.core-guide-stage h3{font-size:24px;margin:16px 0 7px;line-height:1.2;letter-spacing:-.045em}.core-guide-stage p{font-size:13px;color:#786859;line-height:1.8;margin:0}.core-guide-progress{display:flex;gap:7px;margin:3px 0}.core-guide-progress span{width:22px;height:5px;border-radius:9px;background:#e6d8ca;transition:background .2s}.core-guide-progress span.active{background:#b58c6d}.core-guide-actions{display:flex;gap:8px;align-items:center;justify-content:space-between}.core-guide-actions .btn{padding:10px 12px}.core-guide-actions .btn.primary{min-width:91px}#guideOpen{white-space:nowrap}@media(max-width:730px){#guideOpen{font-size:10px;padding:7px 9px}.core-guide-actions{flex-wrap:wrap}}@media(prefers-reduced-motion:reduce){.core-guide-progress span{transition:none}}
+.eclipse-core-handoff{display:flex;align-items:center;justify-content:space-between;gap:13px;margin:0 auto 9px;width:min(960px,calc(100% - 24px));padding:12px 17px;border-radius:17px;background:linear-gradient(120deg,#201d36e8,#112d39ef);border:1px solid #a18eff6b;box-shadow:0 14px 40px #0a061745;color:#f0ecff}.eclipse-core-handoff strong{display:block;font-size:10px;letter-spacing:.18em;color:#b9a8ff}.eclipse-core-handoff span{display:block;font-size:12px;color:#bac7d9;margin-top:3px}.eclipse-core-handoff .btn{flex:none}.core-sound{border:1px solid #9e94e55c;background:#211b3880;color:#d4ccf5;border-radius:999px;padding:3px 10px;cursor:pointer;margin-left:5px;font-size:11px}@media(max-width:680px){.eclipse-core-handoff{flex-wrap:wrap}.core-sound{margin-top:5px}}
 </style>
 </head>
 <body>
@@ -255,8 +256,9 @@ body.core-reduce-motion .btn,body.core-reduce-motion .conversation,body.core-red
     <div class="top"><button class="btn sidebar-toggle" id="openSidebar" type="button" aria-label="Open saved conversations" aria-expanded="true">☰ Menu</button><div style="flex:1;min-width:0"><h1 id="chatTitle">PLQNX CORE ✧</h1><div class="subtitle" id="status" aria-live="polite">✦ Preparing your workspace…</div></div><div><span class="small" id="username"></span> <button class="btn" id="guideOpen" type="button" title="New to CORE? Take the tour">? Guide</button> <button class="btn" id="settingsOpen" type="button" aria-label="Workspace settings" title="Workspace settings">⚙</button> <button class="btn hidden" id="renameChat" type="button" title="Rename this conversation">✎ Rename</button> <button class="btn hidden" id="exportChat" type="button" title="Download this conversation as a text file">↓ Export</button> <button class="btn danger hidden" id="deleteChat" type="button">Delete chat</button></div></div>
     <div class="feed" id="feed" aria-live="polite"><div class="welcome" id="welcome"><div class="orb"></div><h2>From the smallest to the infinite.</h2><p>Private beta with saved chats. Sign in to begin.</p></div></div>
     <button class="lumina-jump hidden" id="jumpLatest" type="button" aria-label="Scroll to the latest message">↓ Latest</button>
+    <div class="eclipse-core-handoff hidden" id="intentHandoff" role="status"><div><strong id="handoffTitle">INTENT IMPORTED</strong><span id="handoffDescription">Your homepage command is ready to send when you choose.</span></div><button id="handoffDismiss" type="button" class="btn">Dismiss</button></div>
     <form class="composer" id="chatForm"><textarea id="prompt" placeholder="Ask anything. Discover everything…" aria-label="Message PLQNX CORE" maxlength="1000" rows="2" required></textarea><button class="btn primary" id="send" type="submit">Send ↗</button></form>
-    <div class="footer-note">PLQNX is an early-stage AI project. Responses may be inaccurate. Avoid sharing sensitive information.</div>
+    <div class="footer-note">PLQNX is an early-stage AI project. Responses may be inaccurate. Avoid sharing sensitive information. <button id="coreSound" type="button" class="core-sound" aria-pressed="false">♪ Sound off</button></div>
   </main>
 </div>
 <div class="overlay" id="overlay">
@@ -300,6 +302,20 @@ let access=sessionStorage.getItem("plqnx_v3_token")||"";
 let name=sessionStorage.getItem("plqnx_v3_name")||"";
 let current="",mode="login",busy=false,convos=[],canRename=false;
 const status=t=>el("status").textContent=t;
+const handoffParams=new URLSearchParams(location.search);
+let incomingPrompt=(handoffParams.get("prompt")||"").trim().slice(0,1000);
+let incomingMode=(handoffParams.get("mode")||"").replace(/[^a-z]/gi,"").slice(0,15);
+if(incomingPrompt){history.replaceState(null,"",location.pathname+location.hash)}
+const handoff=el("intentHandoff");
+function showHandoff(){
+ if(!incomingPrompt)return;
+ el("prompt").value=incomingPrompt;resizePrompt();
+ el("handoffTitle").textContent="READY TO "+(incomingMode||"EXPLORE").toUpperCase();
+ el("handoffDescription").textContent="Review your imported intent, then press Send. Nothing was sent automatically.";
+ handoff.classList.remove("hidden");
+}
+el("handoffDismiss").addEventListener("click",()=>{incomingPrompt="";handoff.classList.add("hidden")});
+
 const settings=el("workspaceSettings");
 const savedPrefs=(()=>{try{return JSON.parse(localStorage.getItem("plqnx_display_preferences")||"{}")}catch{return {}}})();
 const prefs={text:["normal","large","extra"].includes(savedPrefs.text)?savedPrefs.text:"normal",reduceMotion:!!savedPrefs.reduceMotion,compact:!!savedPrefs.compact};
@@ -314,6 +330,12 @@ function applyPrefs(){
 }
 applyPrefs();
 el("settingsOpen").addEventListener("click",()=>settings.showModal());
+let soundEnabled=false;try{soundEnabled=localStorage.getItem("plqnx_sound")==="1"}catch{}
+const soundButton=el("coreSound");
+function renderSound(){soundButton.textContent=soundEnabled?"♪ Sound on":"♪ Sound off";soundButton.setAttribute("aria-pressed",String(soundEnabled))}
+function chime(kind){if(!soundEnabled)return;try{const Audio=window.AudioContext||window.webkitAudioContext;if(!Audio)return;const ctx=new Audio(),osc=ctx.createOscillator(),gain=ctx.createGain();osc.type="sine";osc.frequency.setValueAtTime(kind==="complete"?350:230,ctx.currentTime);osc.frequency.exponentialRampToValueAtTime(kind==="complete"?540:360,ctx.currentTime+.18);gain.gain.setValueAtTime(.0001,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(.022,ctx.currentTime+.018);gain.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+.32);osc.connect(gain);gain.connect(ctx.destination);osc.start();osc.stop(ctx.currentTime+.33);setTimeout(()=>ctx.close(),470)}catch{}}
+window.plqnxSoundEnabled=()=>soundEnabled;window.plqnxChime=chime;
+soundButton.addEventListener("click",()=>{soundEnabled=!soundEnabled;try{localStorage.setItem("plqnx_sound",soundEnabled?"1":"0")}catch{}renderSound();if(soundEnabled)chime("ready")});renderSound();
 const guide=el("coreGuide");
 const guideSteps=[
   ["✧","Start with a question","Ask PLQNX CORE to explain a topic, help with code or explore a creative idea. Starter prompts appear in a new, empty conversation."],
@@ -434,6 +456,7 @@ function welcome(text){
     block.append(hint,suggestions);
   }
   feed.append(block);
+  if(access)showHandoff();
 }
 // Render a small, deliberately restricted Markdown subset with DOM nodes only.
 // No innerHTML, executable HTML, external links, images or arbitrary attributes.
@@ -579,7 +602,7 @@ async function ready(){
         el("username").textContent=name;authScreen(false);await loadList();
         if(convos.length)await openChat(convos[0].id);
         else await newChat();
-        offerGuideOnce();
+        showHandoff();offerGuideOnce();
       }catch{access="";sessionStorage.removeItem("plqnx_v3_token");authScreen(true);status("Please sign in.");}
     }else{authScreen(true);status("Sign in to continue.");}
   }catch(error){authScreen(true);status(error.message);showError(error.message)}
@@ -598,13 +621,14 @@ el("auth").addEventListener("submit",async event=>{
     el("loginPassword").value="";el("invite").value="";
     authScreen(false);el("username").textContent=name;
     await loadList();if(convos.length)await openChat(convos[0].id);else await newChat();
-    offerGuideOnce();
+    showHandoff();offerGuideOnce();
   }catch(error){showError(error.message)}
   finally{el("authSubmit").disabled=false}
 });
 el("chatForm").addEventListener("submit",async event=>{
   event.preventDefault();if(busy||!access)return;
   const message=el("prompt").value.trim();if(!message)return;
+  incomingPrompt="";handoff.classList.add("hidden");
   busy=true;el("send").disabled=true;el("prompt").value="";resizePrompt();
   bubble("user",message);const waiting=bubble("model","Thinking…");waiting.classList.add("thinking");
   try{
@@ -619,6 +643,7 @@ el("chatForm").addEventListener("submit",async event=>{
     });waiting.append(copy);
     el("chatTitle").textContent=data.title;
     status("Saved · "+data.remainingToday+" requests remaining today");
+    if(window.plqnxSoundEnabled?.())window.plqnxChime?.("complete");
     await loadList();
   }catch(error){
     waiting.classList.remove("thinking");waiting.querySelector("div:nth-child(2)").textContent="Unable to reply: "+error.message;
