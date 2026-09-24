@@ -294,7 +294,7 @@ body.core-reduce-motion .mode-chip{transition:none}
       <button class="btn primary" id="send" type="submit">Send ↗</button>
     </form>
     <p class="core-voice-status" id="coreVoiceStatus" role="status" aria-live="polite">Voice input requires microphone permission and browser support. Dictation is never sent automatically.</p>
-    <div class="core-service-check"><button class="btn" id="coreHealthCheck" type="button">Check AI connection</button><span id="coreHealthStatus" role="status" aria-live="polite">Chat needs the Cloudflare Worker and Gemini to respond.</span></div>
+    <div class="core-service-check"><button class="btn" id="coreHealthCheck" type="button">Check Worker</button><button class="btn" id="coreGeminiTest" type="button">Test Gemini directly</button><span id="coreHealthStatus" role="status" aria-live="polite">To diagnose slow chat, test the Worker first, then Gemini. Gemini tests are limited to once per 5 minutes and may use API quota.</span></div>
     <div class="footer-note">PLQNX is an early-stage AI project. Responses may be inaccurate. Avoid sharing sensitive information. <button id="coreSound" type="button" class="core-sound" aria-pressed="false">♪ Sound off</button></div>
   </main>
 </div>
@@ -529,6 +529,20 @@ el("coreHealthCheck").addEventListener("click",async()=>{
   result.textContent="Worker online ("+(info.version||"status received")+"). This confirms the Worker responds, but not Gemini generation. If chat still times out, check Gemini usage and Cloudflare Worker logs.";
  }catch(error){result.textContent="Worker check failed: "+(error?.name==="AbortError"?"no response within 10 seconds":error.message)+". Inspect Cloudflare deployment or your connection."}
  finally{button.disabled=false}
+});
+el("coreGeminiTest").addEventListener("click",async()=>{
+ const button=el("coreGeminiTest"),result=el("coreHealthStatus");
+ if(!access){result.textContent="Sign in first to run an authenticated Gemini diagnostic.";return}
+ button.disabled=true;result.textContent="Sending a minimal authenticated request to Gemini. This can take up to 45 seconds…";
+ const started=performance.now();
+ try{
+  // Call uses the existing session token. No key or credentials are exposed.
+  const data=await call("/v1/ai-test","POST",{});
+  result.textContent="Gemini diagnostic passed. Model: "+data.model+". Worker-to-Gemini time: "+(data.durationMs/1000).toFixed(2)+" seconds. Chat still timing out? Investigate full conversation history and payload size.";
+ }catch(error){
+  const duration=((performance.now()-started)/1000).toFixed(1);
+  result.textContent="Gemini diagnostic failed after "+duration+" seconds: "+error.message+". A 404 response means the deployed Worker has not yet been updated with this diagnostic endpoint.";
+ }finally{button.disabled=false}
 });
 const SpeechAPI=window.SpeechRecognition||window.webkitSpeechRecognition;
 let recognition=null,listening=false,voiceBase="";
