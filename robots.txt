@@ -1,0 +1,5 @@
+# PLQNX search-crawler instructions. Once plqnx.in is connected,
+# this file will be served from the new domain's actual root.
+User-agent: *
+Allow: /
+Sitemap: https://jarvis369-max.github.io/plqnx-website/sitemap.xml
