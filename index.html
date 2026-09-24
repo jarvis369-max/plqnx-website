@@ -48,12 +48,74 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid #a38d
 
 /* Visual confirmation of the canonical warm-white homepage; no dark hero fallback. */
 html,body{background-color:#faf8f4}body{color:#332d28}.hero{background:transparent}.eyebrow{color:#81664c}.card,.glass,.road>div,.cta{color:#332d28}.card h3,.heading,.cta h2{color:#332d28}
+
+/* PLQNX CORE 6.0 · LUMINA: a luminous, tactile design language */
+:root{--lumi-ink:#25231f;--lumi-clay:#ab8869;--lumi-sage:#9caa97;--lumi-line:#e9e1d6;--lumi-shadow:0 28px 85px #76675317}
+html{scroll-padding-top:90px}
+body{background:#faf8f4;letter-spacing:-.008em}
+::selection{background:#e9d5bd;color:#2f261e}
+.space{background:radial-gradient(ellipse at 81% 14%,#f4d9cbb3,transparent 38%),radial-gradient(ellipse at 9% 55%,#e6ebe0bd,transparent 42%),radial-gradient(ellipse at 52% 91%,#f2e8d8ab,transparent 50%),#faf8f4}
+.space:before{content:"";position:absolute;inset:-20%;background:conic-gradient(from 30deg at 50% 48%,transparent,#eedfd03d,transparent,#dce5d83d,transparent);filter:blur(100px);animation:lumiAtmosphere 28s ease-in-out infinite alternate;pointer-events:none}
+.space:after{opacity:.52;background-size:32px 32px;mask-image:linear-gradient(#0008,transparent 85%)}
+@keyframes lumiAtmosphere{to{transform:translate3d(5%,3%,0) rotate(11deg)}}
+header{background:#fffdf9c9;border-bottom:1px solid #ffffffd9;box-shadow:0 10px 42px #5144310b;backdrop-filter:blur(30px) saturate(1.2)}
+nav{min-height:84px}.logo{letter-spacing:.12em}.logo small{letter-spacing:.16em}
+.navlinks a:not(.button){position:relative;transition:color .2s}.navlinks a:not(.button):after{content:"";position:absolute;bottom:-6px;left:0;width:0;height:1px;background:#aa896d;transition:width .35s}.navlinks a:not(.button):hover:after{width:100%}
+.button{position:relative;overflow:hidden;isolation:isolate;border-radius:999px!important;transition:transform .32s cubic-bezier(.2,.8,.2,1),box-shadow .32s,border-color .32s,background .32s}
+.button:hover{transform:translateY(-3px);box-shadow:0 15px 35px #9c786a25}
+.button:active{transform:translateY(0) scale(.985)}
+.button:before{content:"";position:absolute;inset:0;background:linear-gradient(112deg,transparent 30%,#fff9 49%,transparent 68%);transform:translateX(-150%);transition:transform .85s;pointer-events:none}
+.button:hover:before{transform:translateX(150%)}
+.hero{min-height:min(790px,calc(100svh - 84px));padding-top:108px;padding-bottom:108px;position:relative;isolation:isolate;gap:42px}
+.hero:after{content:"";position:absolute;z-index:-1;inset:8% -7% 1%;border-radius:100px;background:radial-gradient(ellipse at 78% 49%,#e8d2bb75,transparent 46%),radial-gradient(ellipse at 8% 18%,#fffbf1ab,transparent 50%);filter:blur(30px);pointer-events:none}
+.hero>div:first-child{position:relative;z-index:2}
+.hero h1{font-size:clamp(3.5rem,7.1vw,7.65rem)!important;line-height:.99!important;max-width:810px;letter-spacing:-.077em!important;font-weight:760;text-wrap:balance;color:#302920}
+.hero h1 em{font-style:normal;background:linear-gradient(115deg,#b19576,#dbb8ab 46%,#8c9e88);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero .lead{max-width:590px;font-size:clamp(16px,1.45vw,20px);line-height:1.82;color:#776d63}
+.eyebrow{background:#fffdfa9e;border:1px solid #eee4d6;box-shadow:0 8px 25px #ac887218;backdrop-filter:blur(20px);padding:10px 16px;border-radius:40px;display:inline-flex;align-items:center;gap:9px;letter-spacing:.16em}
+.hero .actions{margin-top:32px;gap:14px}.hero .actions .button{min-height:53px;padding:14px 26px}
+.pills{gap:10px;margin-top:32px}.pill{border-radius:99px;background:#fffefa90;border:1px solid #e9e0d5;color:#766959;box-shadow:0 4px 18px #8d76520d}
+.reactor{position:relative;min-height:390px;filter:drop-shadow(0 45px 60px #ab81613b);animation:lumiLevitate 8s ease-in-out infinite}
+.reactor:before,.reactor:after{content:"";position:absolute;inset:4%;pointer-events:none;border-radius:50%;background:radial-gradient(circle,#ffffffad 0%,#f6dbcb5c 37%,transparent 68%);filter:blur(17px);animation:lumiHalo 7s ease-in-out infinite alternate}
+.reactor:after{inset:24%;background:#fff7ebb5;filter:blur(50px)}
+.reactor .orbit{border-color:#c1ad95ad!important;box-shadow:0 0 35px #e2cbb27a,inset 0 0 30px #fff8ee}
+.reactor .orbit.o2{border-color:#ccb2a4a3!important}.reactor .orbit.o3{border-color:#bbc9b4a1!important}
+.reactor .hex{filter:drop-shadow(0 18px 34px #b99e7e5a)}
+@keyframes lumiLevitate{50%{transform:translateY(-15px) rotate(2deg)}}
+@keyframes lumiHalo{to{opacity:.35;transform:scale(1.22)}}
+.lumi-hero-note{position:absolute;right:-10px;bottom:11%;z-index:2;padding:15px 20px;border:1px solid #fff;box-shadow:0 22px 55px #735f4e23;background:#fffdfa9d;backdrop-filter:blur(27px);border-radius:22px;max-width:190px;animation:lumiLevitate 9s ease-in-out infinite reverse}
+.lumi-hero-note strong{display:block;font-size:12px;letter-spacing:.12em}.lumi-hero-note span{font-size:11px;color:#82766a}
+main section:not(.hero){position:relative;scroll-margin-top:100px}
+.kicker{letter-spacing:.24em!important;color:#a18468}
+.heading{font-size:clamp(2.3rem,4.7vw,4.6rem)!important;letter-spacing:-.063em!important;line-height:1.1!important;max-width:890px;text-wrap:balance}
+.sub{font-size:16px;line-height:1.9;color:#797064}
+.cards{gap:19px}
+.card,.glass{position:relative;overflow:hidden;border:1px solid #ffffffea!important;background:linear-gradient(145deg,#fffefaed,#f6f0e9ad)!important;border-radius:30px!important;box-shadow:0 18px 48px #90775a13,inset 0 1px #fff;backdrop-filter:blur(22px);transition:transform .45s cubic-bezier(.16,1,.3,1),box-shadow .45s,border-color .45s}
+.card:before,.glass:before{content:"";position:absolute;inset:0;border-radius:inherit;background:radial-gradient(550px circle at var(--px,30%) var(--py,0%),#ffffffbc,transparent 54%);opacity:.4;pointer-events:none}
+.card:hover,.glass:hover{transform:translateY(-9px);box-shadow:0 32px 72px #90775a25;border-color:#dfccb9!important}
+.card .glyph{display:grid;place-items:center;width:58px;height:58px;border:1px solid #e6daca;background:#fff9ee;border-radius:19px;color:#ac8765;font-size:28px}
+.card h3{letter-spacing:-.025em}.card p{line-height:1.85}.chip{border-radius:99px}
+.split{gap:5vw}.glass{padding:clamp(28px,4vw,60px)!important;background:radial-gradient(circle at 90% 5%,#f1dbc7a8,transparent 45%),#fffefa!important}
+.road{gap:17px}.road>div{border:1px solid #fff!important;background:#fffefaac!important;border-radius:24px!important;box-shadow:0 18px 40px #76634c10;backdrop-filter:blur(17px);transition:transform .35s}.road>div:hover{transform:translateY(-6px)}
+.cta{position:relative;overflow:hidden;border-radius:42px!important;border:1px solid #fff;background:radial-gradient(ellipse at 80% -30%,#edcebb,transparent 54%),radial-gradient(ellipse at 5% 100%,#e2e9df,transparent 55%),#f7efe6!important;box-shadow:0 34px 90px #9f82642a;padding:clamp(38px,6vw,86px)!important}
+.cta:after{content:"";position:absolute;width:320px;height:320px;right:-110px;bottom:-180px;border:1px solid #fff9;border-radius:50%;box-shadow:0 0 0 45px #ffffff22,0 0 0 90px #ffffff17;pointer-events:none}
+.footer{margin-top:70px;background:#fffefa9c;border-top:1px solid #eae1d6}
+.dialog{backdrop-filter:blur(22px);background:#3b332a55!important}.dialog .chat{background:#fffdfa!important;color:#302922!important;border:1px solid #fff!important;box-shadow:0 45px 120px #35281f42!important;border-radius:30px!important;overflow:hidden}
+.chatheader{background:#f9f4ed!important;border-color:#ece0d2!important}.chatheader strong{color:#332a21}
+.chatheader div[style]{color:#93816e!important}.messages{background:#fffefa!important}.bubble{background:#f5f0e8!important;color:#453a30!important;border-color:#eee5d9!important}.bubble.mine{background:#eee1d3!important}.smallprint{background:#fffdfa!important;color:#87786a!important}
+.lumi-reveal{opacity:0;transform:translateY(24px);filter:blur(7px);transition:opacity .9s cubic-bezier(.16,1,.3,1),transform .9s cubic-bezier(.16,1,.3,1),filter .9s}
+.lumi-reveal.lumi-visible{opacity:1;transform:translateY(0);filter:blur(0)}
+:focus-visible{outline:3px solid #a88d70!important;outline-offset:4px}
+@media(max-width:900px){.hero{padding-top:78px;padding-bottom:75px;min-height:auto}.reactor{min-height:310px}.lumi-hero-note{right:0;bottom:-20px}}
+@media(max-width:640px){nav{min-height:70px}.hero{padding-top:66px;padding-bottom:86px;gap:45px}.hero h1{font-size:clamp(3.25rem,14vw,5.3rem)!important}.hero .actions{display:flex;flex-wrap:wrap}.lumi-hero-note{right:2%;bottom:-18px;max-width:153px;padding:10px 13px}.reactor{min-height:280px}.card,.glass{border-radius:24px!important}.cta{border-radius:30px!important}}
+@media(prefers-reduced-motion:reduce){.space:before,.reactor,.reactor:before,.reactor:after,.lumi-hero-note{animation:none!important}.lumi-reveal{opacity:1;transform:none;filter:none;transition:none}.button,.card,.glass,.road>div{transition:none}html{scroll-behavior:auto}}
+
 </style>
 </head>
 <body>
 <a class="skip" href="#main">Skip to main content</a><div class="space" aria-hidden="true"></div>
-<header><nav class="wrap" aria-label="Main navigation"><a class="logo" href="#home"><span class="mark" aria-hidden="true"></span><span>PL<b>QNX</b><small>AI LAB · PRE-LAUNCH</small></span></a><button class="menu" aria-label="Toggle navigation" aria-expanded="false" id="menu">☰</button><div class="navlinks" id="links"><a href="#products">Products</a><a href="#approach">Approach</a><a href="#roadmap">Roadmap</a><a href="#vision">Vision</a><a class="button" href="./core.html">CORE saved chats ↗</a><button class="button" type="button" data-demo>Try the demo ↗</button></div></nav></header>
-<main id="main"><section class="hero wrap" id="home"><div><div class="eyebrow"><span class="status"></span> PLQNX · WARM WHITE EDITION / PRE-LAUNCH</div><h1>From the smallest, <em>to the infinite.</em></h1><p class="lead">Inspired by the Planck scale, PLQNX is an independent AI startup project building useful intelligence for learning, creating and solving problems.</p><div class="actions"><button class="button primary" data-demo>Explore PLQNX AI ↗</button><a class="button" href="#products">Discover our vision ↓</a></div><div class="pills"><span class="pill">Human-directed AI</span><span class="pill">Web-first</span><span class="pill">Built to evolve</span></div></div><div class="reactor" aria-label="Illustrated luminous technology core" role="img"><div class="orbit"></div><div class="orbit o2"></div><div class="orbit o3"></div><div class="hex"><div class="core"></div></div></div></section>
+<header><nav class="wrap" aria-label="Main navigation"><a class="logo" href="#home"><span class="mark" aria-hidden="true"></span><span>PL<b>QNX</b><small>AI LAB · PRE-LAUNCH</small></span></a><button class="menu" aria-label="Toggle navigation" aria-expanded="false" id="menu">☰</button><div class="navlinks" id="links"><a href="#products">Products</a><a href="#approach">Approach</a><a href="#roadmap">Roadmap</a><a href="#vision">Vision</a><a class="button" href="./core.html">Enter CORE ↗</a><button class="button" type="button" data-demo>Try the demo ↗</button></div></nav></header>
+<main id="main"><section class="hero wrap" id="home"><div><div class="eyebrow"><span class="status"></span> PLQNX · A NEW DIMENSION OF INTELLIGENCE</div><h1>From the smallest, <em>to the infinite.</em></h1><p class="lead">Inspired by the Planck scale, PLQNX is an independent AI startup project building useful intelligence for learning, creating and solving problems.</p><div class="actions"><button class="button primary" data-demo>Explore PLQNX AI ↗</button><a class="button" href="#products">Discover our vision ↓</a></div><div class="pills"><span class="pill">Human-directed AI</span><span class="pill">Web-first</span><span class="pill">Built to evolve</span></div></div><div class="reactor" aria-label="Illustrated luminous technology core" role="img"><div class="orbit"></div><div class="orbit o2"></div><div class="orbit o3"></div><div class="hex"><div class="core"></div></div></div><div class="lumi-hero-note" aria-hidden="true"><strong>PLQNX CORE ✧</strong><span>A more human way to explore intelligence.</span></div></section>
 <section id="products" class="wrap"><div class="kicker">THE PLQNX ECOSYSTEM</div><h2 class="heading">One vision. Multiple intelligent products.</h2><p class="sub">We're starting with a focused assistant prototype. Additional products below are future ideas, not released applications.</p><div class="cards"><article class="card"><div class="glyph">✧</div><h3>PLQNX CORE</h3><p>Our first AI assistant concept for learning and creative problem-solving.</p><span class="chip">Interactive demo</span></article><article class="card"><div class="glyph">⌘</div><h3>PLQNX FORGE</h3><p>An exploration of AI-assisted coding and developer workflows.</p><span class="chip future">Future concept</span></article><article class="card"><div class="glyph">⬡</div><h3>PLQNX NEXUS</h3><p>A vision for human-supervised agents that automate useful tasks.</p><span class="chip future">Future concept</span></article><article class="card"><div class="glyph">◉</div><h3>PLQNX VISION</h3><p>Future creative tools for visual ideas, presentations and media.</p><span class="chip future">Future concept</span></article></div></section>
 <section id="approach" class="wrap split"><div><div class="kicker">OUR APPROACH</div><h2 class="heading">Powerful ideas start small.</h2><p class="sub">We build one useful product first, learn directly from real users, and expand only when our technology demonstrates value. The Planck scale inspires our name, not a claim that our software operates at that physical scale.</p></div><div class="glass"><h3>Practical intelligence, thoughtfully built.</h3><p>Our founding principles: useful software, transparent prototype status, human oversight, careful data handling and responsible scaling.</p><button class="button" data-demo>Experience the prototype ↗</button></div></section>
 <section id="roadmap" class="wrap"><div class="kicker">DEVELOPMENT ROADMAP</div><h2 class="heading">Build. Test. Learn. Evolve.</h2><div class="road"><div><span>01 · NOW</span><h3>Prototype</h3><p>Design the first interface and demonstrate the assistant experience.</p></div><div><span>02 · NEXT</span><h3>Private beta</h3><p>Connect an AI service, secure access and invite a small testing group.</p></div><div><span>03 · LATER</span><h3>Expand</h3><p>Refine the product, validate demand and explore future AI tools.</p></div></div></section>
@@ -153,6 +215,29 @@ form.addEventListener('submit',async e=>{
   finally {submit.disabled=false;submit.textContent='Send';}
 },true);
 render();
+})();
+</script>
+
+<script>
+/* Ambient visual effects only. No backend or session changes. */
+(()=>{
+const reduce=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+if(reduce)return;
+const nodes=document.querySelectorAll("#products,#approach,#roadmap,#vision,.card,.glass");
+if("IntersectionObserver" in window){
+  const observer=new IntersectionObserver(items=>{
+    for(const item of items)if(item.isIntersecting){item.target.classList.add("lumi-visible");observer.unobserve(item.target)}
+  },{threshold:.09,rootMargin:"0px 0px -30px 0px"});
+  nodes.forEach(node=>{node.classList.add("lumi-reveal");observer.observe(node)});
+}
+document.querySelectorAll(".card,.glass").forEach(card=>{
+  card.addEventListener("pointermove",e=>{
+    if(e.pointerType==="touch")return;
+    const b=card.getBoundingClientRect();
+    card.style.setProperty("--px",((e.clientX-b.left)/b.width*100)+"%");
+    card.style.setProperty("--py",((e.clientY-b.top)/b.height*100)+"%");
+  },{passive:true});
+});
 })();
 </script>
 </body></html>
