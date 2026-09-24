@@ -53,26 +53,46 @@ const cleanTitle=s=>s.replace(/\s+/g," ").trim().slice(0,68)||"New chat";
 async function gemini(env,contents) {
   const model=env.GEMINI_MODEL||"gemini-3.5-flash-lite";
   if(!/^gemini-[a-z0-9.-]+$/.test(model))throw new Error("Invalid model configuration.");
-  const response=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+
-    encodeURIComponent(model)+":generateContent",{
+  // One shared deadline prevents repeated short-lived 503 errors from stacking
+  // into a very long request. Retry only if the upstream rejects promptly.
+  const deadline=Date.now()+45000;
+  const url="https://generativelanguage.googleapis.com/v1beta/models/"+
+    encodeURIComponent(model)+":generateContent";
+  const requestBody=JSON.stringify({
+    systemInstruction:{parts:[{text:
+      "You are PLQNX CORE, a helpful early-stage AI assistant for learning and coding. "+
+      "Use Telugu when the user writes Telugu. Do not claim PLQNX is incorporated or invent actions."
+    }]},
+    contents,generationConfig:{maxOutputTokens:450}
+  });
+  for(let attempt=0;attempt<2;attempt++){
+    const remaining=deadline-Date.now();
+    if(remaining<2000)throw new DOMException("Upstream AI timed out.","TimeoutError");
+    const response=await fetch(url,{
       method:"POST",
       headers:{"Content-Type":"application/json","x-goog-api-key":env.GEMINI_API_KEY},
-      body:JSON.stringify({
-        systemInstruction:{parts:[{text:
-          "You are PLQNX CORE, a helpful early-stage AI assistant for learning and coding. "+
-          "Use Telugu when the user writes Telugu. Do not claim PLQNX is incorporated or invent actions."
-        }]},
-        contents,generationConfig:{maxOutputTokens:650}
-      }),
-      signal:AbortSignal.timeout(45000)
+      body:requestBody,signal:AbortSignal.timeout(remaining)
     });
-  if(response.status===429)throw new Error("Gemini quota reached. Try again later.");
-  if(!response.ok)throw new Error("Gemini request failed (HTTP "+response.status+"). Check selected model, API project quota and access.");
-  const data=await response.json();
-  const answer=(data.candidates?.[0]?.content?.parts||[])
-    .filter(p=>typeof p.text==="string").map(p=>p.text).join("").trim();
-  if(!answer)throw new Error("Gemini returned no text.");
-  return answer.slice(0,8000);
+    // 503 usually indicates upstream unavailability/overload. Only retry once
+    // when the first failure is fast, leaving time for the second call.
+    if(response.status===503){
+      if(attempt===0&&deadline-Date.now()>32000){
+        await new Promise(resolve=>setTimeout(resolve,700));
+        continue;
+      }
+      throw new Error("Gemini is temporarily unavailable (HTTP 503). Wait a minute and restore your message to retry.");
+    }
+    if(response.status===429)throw new Error("Gemini quota or rate limit reached (HTTP 429). Wait before retrying.");
+    if(response.status===404)throw new Error("Gemini model not found (HTTP 404). Check your configured GEMINI_MODEL.");
+    if(response.status===403)throw new Error("Gemini access denied (HTTP 403). Check the API project and key access.");
+    if(!response.ok)throw new Error("Gemini request failed (HTTP "+response.status+"). Check AI project and Worker logs.");
+    const data=await response.json();
+    const answer=(data.candidates?.[0]?.content?.parts||[])
+      .filter(p=>typeof p.text==="string").map(p=>p.text).join("").trim();
+    if(!answer)throw new Error("Gemini returned no text.");
+    return answer.slice(0,8000);
+  }
+  throw new Error("Gemini is temporarily unavailable. Retry later.");
 }
 
 // V4 D1 throttle: requires backend/security-v4.sql before deploying this file.
