@@ -600,7 +600,8 @@ async function ready(){
       try{
         const user=await call("/v1/me");name=user.username;
         el("username").textContent=name;authScreen(false);await loadList();
-        if(convos.length)await openChat(convos[0].id);
+        if(incomingPrompt)await newChat();
+        else if(convos.length)await openChat(convos[0].id);
         else await newChat();
         showHandoff();offerGuideOnce();
       }catch{access="";sessionStorage.removeItem("plqnx_v3_token");authScreen(true);status("Please sign in.");}
@@ -620,7 +621,7 @@ el("auth").addEventListener("submit",async event=>{
     sessionStorage.setItem("plqnx_v3_name",name);
     el("loginPassword").value="";el("invite").value="";
     authScreen(false);el("username").textContent=name;
-    await loadList();if(convos.length)await openChat(convos[0].id);else await newChat();
+    await loadList();if(incomingPrompt)await newChat();else if(convos.length)await openChat(convos[0].id);else await newChat();
     showHandoff();offerGuideOnce();
   }catch(error){showError(error.message)}
   finally{el("authSubmit").disabled=false}
