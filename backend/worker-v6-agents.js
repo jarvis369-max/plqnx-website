@@ -64,7 +64,7 @@ async function gemini(env,contents) {
         }]},
         contents,generationConfig:{maxOutputTokens:650}
       }),
-      signal:AbortSignal.timeout(25000)
+      signal:AbortSignal.timeout(45000)
     });
   if(response.status===429)throw new Error("Gemini quota reached. Try again later.");
   if(!response.ok)throw new Error("Gemini request failed. Check the selected model and API quota.");
@@ -294,7 +294,15 @@ export default {
         contents.push({role:"user",parts:[{text:message.trim()}]});
         let answer;
         try{answer=await gemini(env,contents)}
-        catch(error){return reply({error:error.message||"AI unavailable."},502,origin)}
+        catch(error){
+          // Failed AI calls never save a user message or model reply. Restore their
+          // daily request allowance so a manual retry isn't penalized.
+          await env.DB.prepare("UPDATE daily_usage SET requests=CASE WHEN requests>0 THEN requests-1 ELSE 0 END WHERE user_id=? AND day=?")
+            .bind(user.id,day).run();
+          const timedOut=error?.name==="TimeoutError"||error?.name==="AbortError"||/timeout|aborted/i.test(error?.message||"");
+          if(timedOut)return reply({error:"The AI service did not respond within 45 seconds. Your message was not saved. Use Restore my message and try again.",code:"AI_TIMEOUT",retryable:true},504,origin);
+          return reply({error:error.message||"AI unavailable.",code:"AI_UPSTREAM",retryable:true},502,origin);
+        }
         const title=convo.title==="New chat"?cleanTitle(message):convo.title;
         await env.DB.batch([
           env.DB.prepare("INSERT INTO messages(id,conversation_id,role,content) VALUES(?,?,?,?)")
