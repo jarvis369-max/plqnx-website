@@ -67,7 +67,7 @@ async function gemini(env,contents) {
       signal:AbortSignal.timeout(45000)
     });
   if(response.status===429)throw new Error("Gemini quota reached. Try again later.");
-  if(!response.ok)throw new Error("Gemini request failed. Check the selected model and API quota.");
+  if(!response.ok)throw new Error("Gemini request failed (HTTP "+response.status+"). Check selected model, API project quota and access.");
   const data=await response.json();
   const answer=(data.candidates?.[0]?.content?.parts||[])
     .filter(p=>typeof p.text==="string").map(p=>p.text).join("").trim();
@@ -199,6 +199,23 @@ export default {
       if(!user)return reply({error:"Please sign in again."},401,origin);
       if(path==="/v1/me"&&method==="GET")
         return reply({username:user.username},200,origin);
+      // Authenticated one-shot diagnostic: single small Gemini request, with no chat
+      // history, no conversation writes, and one invocation per user / 5 minutes.
+      if(path==="/v1/ai-test"&&method==="POST"){
+        if(!await throttle(env.DB,env,"ai-test",user.id,300,1))
+          return reply({ok:false,code:"TEST_RATE_LIMIT",error:"One diagnostic test every five minutes."},429,origin);
+        const started=Date.now();
+        try{
+          const result=await gemini(env,[{role:"user",parts:[{text:"Reply with exactly OK."}]}]);
+          return reply({ok:true,model:env.GEMINI_MODEL||"gemini-3.5-flash-lite",durationMs:Date.now()-started,responded:Boolean(result),resultMatches:result.trim().toUpperCase()==="OK"},200,origin);
+        }catch(error){
+          const timedOut=error?.name==="TimeoutError"||error?.name==="AbortError"||/timeout|aborted/i.test(error?.message||"");
+          // Do not return upstream error bodies, authentication values or raw traces.
+          const category=timedOut?"AI_TIMEOUT":/quota|429/i.test(error?.message||"")?"AI_QUOTA":/HTTP 404/.test(error?.message||"")?"AI_MODEL_NOT_FOUND":/HTTP 403/.test(error?.message||"")?"AI_ACCESS":/HTTP 400/.test(error?.message||"")?"AI_BAD_REQUEST":"AI_UPSTREAM";
+          return reply({ok:false,model:env.GEMINI_MODEL||"gemini-3.5-flash-lite",durationMs:Date.now()-started,code:category,error:timedOut?"Gemini did not return within the diagnostic timeout.":"Gemini returned an error. Check model access, project quota and the Worker logs."},timedOut?504:502,origin);
+        }
+      }
+
       if(path==="/v1/logout"&&method==="POST"){
         await env.DB.prepare("DELETE FROM sessions WHERE token_hash=?").bind(user.token_hash).run();
         return reply({ok:true},200,origin);
