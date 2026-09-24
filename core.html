@@ -239,6 +239,7 @@ body.core-reduce-motion .btn,body.core-reduce-motion .conversation,body.core-red
 @media(max-width:730px){#settingsOpen{min-width:34px}.settings-panel{gap:12px}}
 .core-guide-panel{min-height:365px}.core-guide-stage{min-height:165px;padding:13px 0}.guide-symbol{display:grid;place-items:center;width:58px;height:58px;border-radius:20px;background:linear-gradient(130deg,#f5e2d0,#ecede1);border:1px solid #e4d0ba;font-size:30px;color:#a57c58;box-shadow:0 10px 25px #a9846321}.core-guide-stage h3{font-size:24px;margin:16px 0 7px;line-height:1.2;letter-spacing:-.045em}.core-guide-stage p{font-size:13px;color:#786859;line-height:1.8;margin:0}.core-guide-progress{display:flex;gap:7px;margin:3px 0}.core-guide-progress span{width:22px;height:5px;border-radius:9px;background:#e6d8ca;transition:background .2s}.core-guide-progress span.active{background:#b58c6d}.core-guide-actions{display:flex;gap:8px;align-items:center;justify-content:space-between}.core-guide-actions .btn{padding:10px 12px}.core-guide-actions .btn.primary{min-width:91px}#guideOpen{white-space:nowrap}@media(max-width:730px){#guideOpen{font-size:10px;padding:7px 9px}.core-guide-actions{flex-wrap:wrap}}@media(prefers-reduced-motion:reduce){.core-guide-progress span{transition:none}}
 .eclipse-core-handoff{display:flex;align-items:center;justify-content:space-between;gap:13px;margin:0 auto 9px;width:min(960px,calc(100% - 24px));padding:12px 17px;border-radius:17px;background:linear-gradient(120deg,#201d36e8,#112d39ef);border:1px solid #a18eff6b;box-shadow:0 14px 40px #0a061745;color:#f0ecff}.eclipse-core-handoff strong{display:block;font-size:10px;letter-spacing:.18em;color:#b9a8ff}.eclipse-core-handoff span{display:block;font-size:12px;color:#bac7d9;margin-top:3px}.eclipse-core-handoff .btn{flex:none}.core-sound{border:1px solid #9e94e55c;background:#211b3880;color:#d4ccf5;border-radius:999px;padding:3px 10px;cursor:pointer;margin-left:5px;font-size:11px}@media(max-width:680px){.eclipse-core-handoff{flex-wrap:wrap}.core-sound{margin-top:5px}}
+.agent-form{display:grid;gap:12px}.agent-form>label:not(.settings-check){font-size:12px;font-weight:750;color:#a994d5}.agent-form>input{width:100%;background:#111124;color:#f0eaff;border:1px solid #9c80ec66;border-radius:12px;padding:13px;font:inherit}.agent-form .settings-check{align-items:center}.agent-form .settings-check small{line-height:1.65}.agent-status{font-size:12px;color:#bfb2d3;line-height:1.6}.agent-inbox-heading{font-size:17px;margin:8px 0 0}.agent-inbox{max-height:min(350px,43vh);overflow:auto;display:grid;gap:12px}.agent-inbox>p{font-size:12px;color:#bfb2d3}.agent-brief{border:1px solid #b6a3dd44;background:#1b15365c;border-radius:15px;padding:16px}.agent-brief h4{font-size:10px;letter-spacing:.13em;color:#ad93e9;margin:0 0 4px}.agent-brief small{font-size:11px;color:#d1c6dc}.agent-brief p{font-size:13px;color:#f0eafb;white-space:pre-wrap;line-height:1.75;margin:12px 0 0}.agent-disclaimer{font-size:11px;color:#bcb0c9;line-height:1.6;margin:0}#agentDialog{max-height:min(780px,calc(100dvh - 25px));overflow:auto}#agentOpen{white-space:nowrap}
 </style>
 </head>
 <body>
@@ -253,7 +254,7 @@ body.core-reduce-motion .btn,body.core-reduce-motion .conversation,body.core-red
     <div class="aside-bottom"><div class="small">Private beta · Up to 25 requests per user per day. Never send sensitive information.</div><nav class="core-links" aria-label="PLQNX information"><a href="./">Home</a><a href="./faq.html">Help &amp; FAQ</a><a href="./contact.html">Feedback</a><a href="./privacy.html">Privacy</a></nav><button class="btn" id="logout" type="button">Sign out</button></div>
   </aside>
   <main>
-    <div class="top"><button class="btn sidebar-toggle" id="openSidebar" type="button" aria-label="Open saved conversations" aria-expanded="true">☰ Menu</button><div style="flex:1;min-width:0"><h1 id="chatTitle">PLQNX CORE ✧</h1><div class="subtitle" id="status" aria-live="polite">✦ Preparing your workspace…</div></div><div><span class="small" id="username"></span> <button class="btn" id="guideOpen" type="button" title="New to CORE? Take the tour">? Guide</button> <button class="btn" id="settingsOpen" type="button" aria-label="Workspace settings" title="Workspace settings">⚙</button> <button class="btn hidden" id="renameChat" type="button" title="Rename this conversation">✎ Rename</button> <button class="btn hidden" id="exportChat" type="button" title="Download this conversation as a text file">↓ Export</button> <button class="btn danger hidden" id="deleteChat" type="button">Delete chat</button></div></div>
+    <div class="top"><button class="btn sidebar-toggle" id="openSidebar" type="button" aria-label="Open saved conversations" aria-expanded="true">☰ Menu</button><div style="flex:1;min-width:0"><h1 id="chatTitle">PLQNX CORE ✧</h1><div class="subtitle" id="status" aria-live="polite">✦ Preparing your workspace…</div></div><div><span class="small" id="username"></span> <button class="btn hidden" id="agentOpen" type="button" title="Scheduled opt-in AI briefs">✦ Briefs</button> <button class="btn" id="guideOpen" type="button" title="New to CORE? Take the tour">? Guide</button> <button class="btn" id="settingsOpen" type="button" aria-label="Workspace settings" title="Workspace settings">⚙</button> <button class="btn hidden" id="renameChat" type="button" title="Rename this conversation">✎ Rename</button> <button class="btn hidden" id="exportChat" type="button" title="Download this conversation as a text file">↓ Export</button> <button class="btn danger hidden" id="deleteChat" type="button">Delete chat</button></div></div>
     <div class="feed" id="feed" aria-live="polite"><div class="welcome" id="welcome"><div class="orb"></div><h2>From the smallest to the infinite.</h2><p>Private beta with saved chats. Sign in to begin.</p></div></div>
     <button class="lumina-jump hidden" id="jumpLatest" type="button" aria-label="Scroll to the latest message">↓ Latest</button>
     <div class="eclipse-core-handoff hidden" id="intentHandoff" role="status"><div><strong id="handoffTitle">INTENT IMPORTED</strong><span id="handoffDescription">Your homepage command is ready to send when you choose.</span></div><button id="handoffDismiss" type="button" class="btn">Dismiss</button></div>
@@ -276,6 +277,19 @@ body.core-reduce-motion .btn,body.core-reduce-motion .conversation,body.core-red
     <p class="notice">Private testing only. Keep your invitation code and password private. Accounts are limited during beta.</p>
   </form>
 </div>
+<dialog id="agentDialog" class="core-settings" aria-labelledby="agentTitle">
+<div class="settings-panel">
+<div class="settings-heading"><div><div class="label">OPT-IN · SCHEDULED AI BRIEFS</div><h2 id="agentTitle">Your daily briefs.</h2><p>Choose a subject and optionally receive up to three short AI-generated idea briefs daily. This feature runs only if the Cloudflare scheduled service is enabled.</p></div><button id="agentClose" class="btn" type="button" aria-label="Close daily briefs">✕</button></div>
+<form id="agentForm" class="agent-form">
+<label for="agentTopic">Topic for your briefs</label>
+<input id="agentTopic" type="text" maxlength="180" placeholder="For example: learning machine learning with Python" autocomplete="off">
+<label class="settings-check"><input id="agentEnabled" type="checkbox"><span>Enable scheduled briefs<small>My topic is sent to the external AI service up to three times per day. I can turn this off anytime.</small></span></label>
+<button class="btn primary" id="agentSave" type="submit">Save preferences</button>
+<p id="agentStatus" class="agent-status" role="status" aria-live="polite">Off by default. No background requests will run unless you opt in.</p>
+</form>
+<h3 class="agent-inbox-heading">Your inbox</h3><div id="agentInbox" class="agent-inbox"><p>Enable briefs to start receiving updates when scheduled runs complete.</p></div>
+<p class="agent-disclaimer">Briefs are unverified AI-generated suggestions, not completed work, live news or automatic changes to your files. They may be inaccurate.</p>
+</div></dialog>
 <dialog id="coreGuide" class="core-settings" aria-labelledby="coreGuideTitle">
   <div class="settings-panel core-guide-panel"><div class="settings-heading"><div><div class="label">WELCOME TO YOUR WORKSPACE</div><h2 id="coreGuideTitle">Explore PLQNX CORE.</h2><p>A quick guide to getting started with the private beta.</p></div><button id="guideClose" class="btn" type="button" aria-label="Close guide">✕</button></div>
   <div class="core-guide-stage" id="guideStage" aria-live="polite"></div>
@@ -300,8 +314,39 @@ const API="https://plqnx-core-beta.sasankm2009.workers.dev";
 const el=id=>document.getElementById(id);
 let access=sessionStorage.getItem("plqnx_v3_token")||"";
 let name=sessionStorage.getItem("plqnx_v3_name")||"";
-let current="",mode="login",busy=false,convos=[],canRename=false;
+let current="",mode="login",busy=false,convos=[],canRename=false,agentAvailable=false;
 const status=t=>el("status").textContent=t;
+const agentDialog=el("agentDialog");
+const agentStatus=message=>el("agentStatus").textContent=message;
+el("agentClose").addEventListener("click",()=>agentDialog.close());
+el("agentOpen").addEventListener("click",()=>{agentDialog.showModal();loadAgent().catch(error=>agentStatus(error.message))});
+async function loadAgent(){
+ if(!agentAvailable||!access)return;
+ const data=await call("/v1/agent");
+ if(!data.available){agentAvailable=false;el("agentOpen").classList.add("hidden");return}
+ el("agentTopic").value=data.topic||"";
+ el("agentEnabled").checked=!!data.enabled;
+ agentStatus(data.enabled?"Enabled. New briefs appear here after scheduled processing.":"Disabled. No new briefs will be generated.");
+ const host=el("agentInbox");host.replaceChildren();
+ const briefs=Array.isArray(data.briefs)?data.briefs:[];
+ if(!briefs.length){const p=document.createElement("p");p.textContent="No briefs generated yet. Your inbox will fill only after a scheduled run, if you enable the feature.";host.append(p)}
+ for(const item of briefs){
+  const card=document.createElement("article");card.className="agent-brief";
+  const heading=document.createElement("h4");heading.textContent=(item.slot||"").toUpperCase()+" · "+(item.day||"");
+  const topic=document.createElement("small");topic.textContent=item.topic||"";
+  const content=document.createElement("p");content.textContent=item.content||"";
+  card.append(heading,topic,content);host.append(card);
+ }
+}
+el("agentForm").addEventListener("submit",async event=>{
+ event.preventDefault();if(!agentAvailable||!access)return;
+ const enabled=el("agentEnabled").checked,topic=el("agentTopic").value.trim();
+ if(enabled&&topic.length<6){agentStatus("Enter a subject with at least six characters.");el("agentTopic").focus();return}
+ el("agentSave").disabled=true;agentStatus("Saving preferences…");
+ try{await call("/v1/agent/preferences","POST",{enabled,topic});await loadAgent();agentStatus(enabled?"Briefs enabled. Your first brief will appear after the next scheduled run.":"Briefs disabled. No future scheduled requests will run for this account.")}
+ catch(error){agentStatus("Could not save: "+error.message)}
+ finally{el("agentSave").disabled=false}
+});
 const handoffParams=new URLSearchParams(location.search);
 let incomingPrompt=(handoffParams.get("prompt")||"").trim().slice(0,1000);
 let incomingMode=(handoffParams.get("mode")||"").replace(/[^a-z]/gi,"").slice(0,15);
@@ -594,7 +639,7 @@ async function newChat(){
 }
 async function ready(){
   try{
-    const info=await call("/v1/status");canRename=Boolean(info.renameConversation);if(info.version!=="persistent-v1")
+    const info=await call("/v1/status");canRename=Boolean(info.renameConversation);agentAvailable=Boolean(info.agentBriefs);el("agentOpen").classList.toggle("hidden",!agentAvailable);if(info.version!=="persistent-v1")
       throw Error("Deploy Worker V3 to enable saved conversations.");
     if(access){
       try{
@@ -603,7 +648,7 @@ async function ready(){
         if(incomingPrompt)await newChat();
         else if(convos.length)await openChat(convos[0].id);
         else await newChat();
-        showHandoff();offerGuideOnce();
+        showHandoff();offerGuideOnce();if(agentAvailable)loadAgent().catch(()=>{});if(agentAvailable)loadAgent().catch(()=>{});
       }catch{access="";sessionStorage.removeItem("plqnx_v3_token");authScreen(true);status("Please sign in.");}
     }else{authScreen(true);status("Sign in to continue.");}
   }catch(error){authScreen(true);status(error.message);showError(error.message)}
