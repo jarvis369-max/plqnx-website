@@ -214,7 +214,7 @@ export default {
         const data=await payload(request,900);
         if(typeof data.enabled!=="boolean"||typeof data.topic!=="string"||data.topic.length>180)
           return reply({error:"Choose a topic up to 180 characters."},400,origin);
-        const topic=data.topic.replace(/\\s+/g," ").trim();
+        const topic=data.topic.replace(/\s+/g," ").trim();
         if(data.enabled&&topic.length<6)return reply({error:"Enter a topic with at least six characters."},400,origin);
         await env.DB.prepare("INSERT INTO agent_preferences(user_id,enabled,topic) VALUES(?,?,?) ON CONFLICT(user_id) DO UPDATE SET enabled=excluded.enabled,topic=excluded.topic,updated_at=unixepoch()")
           .bind(user.id,data.enabled?1:0,topic).run();
