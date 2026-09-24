@@ -239,7 +239,7 @@ body.core-reduce-motion .btn,body.core-reduce-motion .conversation,body.core-red
 @media(max-width:730px){#settingsOpen{min-width:34px}.settings-panel{gap:12px}}
 .core-guide-panel{min-height:365px}.core-guide-stage{min-height:165px;padding:13px 0}.guide-symbol{display:grid;place-items:center;width:58px;height:58px;border-radius:20px;background:linear-gradient(130deg,#f5e2d0,#ecede1);border:1px solid #e4d0ba;font-size:30px;color:#a57c58;box-shadow:0 10px 25px #a9846321}.core-guide-stage h3{font-size:24px;margin:16px 0 7px;line-height:1.2;letter-spacing:-.045em}.core-guide-stage p{font-size:13px;color:#786859;line-height:1.8;margin:0}.core-guide-progress{display:flex;gap:7px;margin:3px 0}.core-guide-progress span{width:22px;height:5px;border-radius:9px;background:#e6d8ca;transition:background .2s}.core-guide-progress span.active{background:#b58c6d}.core-guide-actions{display:flex;gap:8px;align-items:center;justify-content:space-between}.core-guide-actions .btn{padding:10px 12px}.core-guide-actions .btn.primary{min-width:91px}#guideOpen{white-space:nowrap}@media(max-width:730px){#guideOpen{font-size:10px;padding:7px 9px}.core-guide-actions{flex-wrap:wrap}}@media(prefers-reduced-motion:reduce){.core-guide-progress span{transition:none}}
 .eclipse-core-handoff{display:flex;align-items:center;justify-content:space-between;gap:13px;margin:0 auto 9px;width:min(960px,calc(100% - 24px));padding:12px 17px;border-radius:17px;background:linear-gradient(120deg,#201d36e8,#112d39ef);border:1px solid #a18eff6b;box-shadow:0 14px 40px #0a061745;color:#f0ecff}.eclipse-core-handoff strong{display:block;font-size:10px;letter-spacing:.18em;color:#b9a8ff}.eclipse-core-handoff span{display:block;font-size:12px;color:#bac7d9;margin-top:3px}.eclipse-core-handoff .btn{flex:none}.core-sound{border:1px solid #9e94e55c;background:#211b3880;color:#d4ccf5;border-radius:999px;padding:3px 10px;cursor:pointer;margin-left:5px;font-size:11px}@media(max-width:680px){.eclipse-core-handoff{flex-wrap:wrap}.core-sound{margin-top:5px}}
-.agent-form{display:grid;gap:12px}.agent-form>label:not(.settings-check){font-size:12px;font-weight:750;color:#a994d5}.agent-form>input{width:100%;background:#111124;color:#f0eaff;border:1px solid #9c80ec66;border-radius:12px;padding:13px;font:inherit}.agent-form .settings-check{align-items:center}.agent-form .settings-check small{line-height:1.65}.agent-status{font-size:12px;color:#bfb2d3;line-height:1.6}.agent-inbox-heading{font-size:17px;margin:8px 0 0}.agent-inbox{max-height:min(350px,43vh);overflow:auto;display:grid;gap:12px}.agent-inbox>p{font-size:12px;color:#bfb2d3}.agent-brief{border:1px solid #b6a3dd44;background:#1b15365c;border-radius:15px;padding:16px}.agent-brief h4{font-size:10px;letter-spacing:.13em;color:#ad93e9;margin:0 0 4px}.agent-brief small{font-size:11px;color:#d1c6dc}.agent-brief p{font-size:13px;color:#f0eafb;white-space:pre-wrap;line-height:1.75;margin:12px 0 0}.agent-disclaimer{font-size:11px;color:#bcb0c9;line-height:1.6;margin:0}#agentDialog{max-height:min(780px,calc(100dvh - 25px));overflow:auto}#agentOpen{white-space:nowrap}
+.agent-form{display:grid;gap:12px}.agent-form>label:not(.settings-check){font-size:12px;font-weight:750;color:#795d98}.agent-form>input{width:100%;background:#111124;color:#f0eaff;border:1px solid #9c80ec66;border-radius:12px;padding:13px;font:inherit}.agent-form .settings-check{align-items:center}.agent-form .settings-check small{line-height:1.65}.agent-status{font-size:12px;color:#715f7c;line-height:1.6}.agent-inbox-heading{font-size:17px;margin:8px 0 0}.agent-inbox{max-height:min(350px,43vh);overflow:auto;display:grid;gap:12px}.agent-inbox>p{font-size:12px;color:#75647c}.agent-brief{border:1px solid #b6a3dd44;background:#1b15365c;border-radius:15px;padding:16px}.agent-brief h4{font-size:10px;letter-spacing:.13em;color:#ad93e9;margin:0 0 4px}.agent-brief small{font-size:11px;color:#d1c6dc}.agent-brief p{font-size:13px;color:#f0eafb;white-space:pre-wrap;line-height:1.75;margin:12px 0 0}.agent-disclaimer{font-size:11px;color:#796a82;line-height:1.6;margin:0}#agentDialog{max-height:min(780px,calc(100dvh - 25px));overflow:auto}#agentOpen{white-space:nowrap}
 </style>
 </head>
 <body>
@@ -648,7 +648,7 @@ async function ready(){
         if(incomingPrompt)await newChat();
         else if(convos.length)await openChat(convos[0].id);
         else await newChat();
-        showHandoff();offerGuideOnce();if(agentAvailable)loadAgent().catch(()=>{});if(agentAvailable)loadAgent().catch(()=>{});
+        showHandoff();offerGuideOnce();if(agentAvailable)loadAgent().catch(()=>{});
       }catch{access="";sessionStorage.removeItem("plqnx_v3_token");authScreen(true);status("Please sign in.");}
     }else{authScreen(true);status("Sign in to continue.");}
   }catch(error){authScreen(true);status(error.message);showError(error.message)}
@@ -667,7 +667,7 @@ el("auth").addEventListener("submit",async event=>{
     el("loginPassword").value="";el("invite").value="";
     authScreen(false);el("username").textContent=name;
     await loadList();if(incomingPrompt)await newChat();else if(convos.length)await openChat(convos[0].id);else await newChat();
-    showHandoff();offerGuideOnce();
+    showHandoff();offerGuideOnce();if(agentAvailable)loadAgent().catch(()=>{});
   }catch(error){showError(error.message)}
   finally{el("authSubmit").disabled=false}
 });
