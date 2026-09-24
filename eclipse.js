@@ -7,7 +7,13 @@ const state={x:.5,y:.5,typing:0,lastKey:0,context:"focus",audio:false,history:[]
 try{state.remember=localStorage.getItem("plqnx_remember_intents")==="1";if(state.remember)state.history=JSON.parse(localStorage.getItem("plqnx_intent_history")||"[]").filter(item=>item&&typeof item.text==="string"&&Number.isFinite(item.at)).slice(-12);else{localStorage.removeItem("plqnx_intent_history");localStorage.removeItem("plqnx_last_seen")}}catch{}
 const hour=new Date().getHours(),daypart=hour<12?"morning":hour<17?"afternoon":"night";body.dataset.eDaypart=daypart;
 const copy={morning:{title:"Good morning. What are we solving?",lead:"Start with intent. PLQNX shapes the interface around what you want to do."},afternoon:{title:"Turn intent into momentum.",lead:"One command can open the right workspace, prompt, or next step without hunting through menus."},night:{title:"Quiet interface. Big ideas.",lead:"A low-distraction canvas for building, learning and creating when the rest of the screen can disappear."}};
-const title=$("#adaptiveTitle"),lead=$("#adaptiveLead");if(title)title.textContent=copy[daypart].title;if(lead)lead.textContent=copy[daypart].lead;
+const title=$("#adaptiveTitle"),lead=$("#adaptiveLead");
+if(title){
+ const lines={morning:["Good morning.","What are we solving?"],afternoon:["Turn intent into","momentum."],night:["Quiet interface.","Big ideas."]}[daypart];
+ title.replaceChildren(document.createTextNode(lines[0]+" "));
+ const accent=document.createElement("span");accent.textContent=lines[1];title.append(accent);
+}
+if(lead)lead.textContent=copy[daypart].lead;
 const mode=$("#commandMode"),speed=$("#commandSpeed"),input=$("#commandInput");
 function classify(text){const t=text.toLowerCase();if(/code|build|debug|app|website|api|python|javascript|model/.test(t))return"build";if(/write|story|image|creative|design|script|logo|video|idea/.test(t))return"create";if(/data|analy|report|compare|research|metric|trend/.test(t))return"analyze";if(/learn|explain|teach|study|understand/.test(t))return"learn";return hour>=21||hour<7?"focus":"explore"}
 function setContext(c){state.context=c;body.dataset.eContext=c;if(mode)mode.textContent=(c+" mode").toUpperCase();renderPredictive()}
