@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#f9f7f3">
-<title>PLQNX CORE | Lumina Experience</title>
+<title>PLQNX CORE | Your AI Workspace</title>
 <meta name="description" content="Explore PLQNX CORE, an invite-only AI assistant beta with saved conversations, coding help, and learning support.">
 <meta name="robots" content="index,follow">
 <link rel="canonical" href="https://jarvis369-max.github.io/plqnx-website/core.html">
@@ -208,6 +208,35 @@ body:after,.welcome .orb,.thinking-dots:after,.message{animation:none!important}
 .feed{scroll-behavior:auto}
 }
 
+
+/* CORE 7.0: editable accessible workspace preferences, informational navigation */
+.core-links{display:flex;flex-wrap:wrap;column-gap:13px;row-gap:4px}
+.core-links a{font-size:11px;color:#927a66;text-decoration:none}
+.core-links a:hover{text-decoration:underline;text-underline-offset:3px;color:#584332}
+.core-settings{border:1px solid #fff;border-radius:30px;padding:0;max-width:min(490px,calc(100vw - 28px));width:100%;color:#3d3127;background:radial-gradient(ellipse at 100% 0%,#f2dfcf,transparent 60%),#fffefa;box-shadow:0 38px 120px #4b362e55}
+.core-settings::backdrop{background:#44392e66;backdrop-filter:blur(14px)}
+.settings-panel{display:grid;gap:16px;padding:clamp(22px,4vw,37px)}
+.settings-heading{display:flex;gap:20px;justify-content:space-between;align-items:start}
+.settings-heading h2{font-size:clamp(25px,4vw,35px);line-height:1.2;letter-spacing:-.05em;margin:10px 0}
+.settings-heading p{font-size:12px;line-height:1.7;color:#817365;margin:0 0 8px}
+.settings-panel>label:not(.settings-check){font-size:12px;color:#776452;font-weight:750}
+.settings-panel select{padding:13px;border-radius:14px;border:1px solid #e0cbb9;background:#fffefa;color:#554331;font:inherit}
+.settings-check{display:flex;align-items:start;gap:12px;padding:13px;border:1px solid #e7d9ca;border-radius:15px;background:#ffffff70;cursor:pointer;color:#544435;font-weight:750}
+.settings-check input{width:17px;height:17px;accent-color:#b59273;margin-top:3px;flex:none}
+.settings-check small{display:block;font-size:11px;color:#887667;font-weight:400;margin-top:3px}
+.settings-links{display:flex;flex-wrap:wrap;gap:13px;padding:4px 0}
+.settings-links a{color:#826449;font-size:11px;text-decoration:underline;text-underline-offset:3px}
+body[data-text-size=large] .message{font-size:17px}
+body[data-text-size=extra] .message{font-size:19px}
+body[data-text-size=large] .composer textarea{font-size:18px}
+body[data-text-size=extra] .composer textarea{font-size:20px}
+body.core-compact .feed{gap:9px;padding-top:19px;padding-bottom:18px}
+body.core-compact .message{padding:11px 15px!important;border-radius:15px!important}
+body.core-compact .formatted p{margin-bottom:8px}
+body.core-reduce-motion:after,body.core-reduce-motion .message,body.core-reduce-motion .orb,body.core-reduce-motion .thinking-dots:after{animation:none!important}
+body.core-reduce-motion .feed{scroll-behavior:auto!important}
+body.core-reduce-motion .btn,body.core-reduce-motion .conversation,body.core-reduce-motion .lumina-prompt{transition:none!important}
+@media(max-width:730px){#settingsOpen{min-width:34px}.settings-panel{gap:12px}}
 </style>
 </head>
 <body>
@@ -219,10 +248,10 @@ body:after,.welcome .orb,.thinking-dots:after,.message{animation:none!important}
     <button class="btn primary" id="newChat" type="button">＋ New conversation</button>
     <input class="search" id="chatSearch" type="search" placeholder="Search saved chats…" aria-label="Search saved conversations" autocomplete="off">
     <div class="list" id="conversations" aria-label="Saved conversations"></div>
-    <div class="aside-bottom"><div class="small">Private beta · Up to 25 requests per user per day. Never send sensitive information.</div><button class="btn" id="logout" type="button">Sign out</button></div>
+    <div class="aside-bottom"><div class="small">Private beta · Up to 25 requests per user per day. Never send sensitive information.</div><nav class="core-links" aria-label="PLQNX information"><a href="./">Home</a><a href="./faq.html">Help &amp; FAQ</a><a href="./contact.html">Feedback</a><a href="./privacy.html">Privacy</a></nav><button class="btn" id="logout" type="button">Sign out</button></div>
   </aside>
   <main>
-    <div class="top"><button class="btn sidebar-toggle" id="openSidebar" type="button" aria-label="Open saved conversations" aria-expanded="true">☰ Menu</button><div style="flex:1;min-width:0"><h1 id="chatTitle">PLQNX CORE ✧</h1><div class="subtitle" id="status" aria-live="polite">✦ Preparing your workspace…</div></div><div><span class="small" id="username"></span> <button class="btn hidden" id="renameChat" type="button" title="Rename this conversation">✎ Rename</button> <button class="btn hidden" id="exportChat" type="button" title="Download this conversation as a text file">↓ Export</button> <button class="btn danger hidden" id="deleteChat" type="button">Delete chat</button></div></div>
+    <div class="top"><button class="btn sidebar-toggle" id="openSidebar" type="button" aria-label="Open saved conversations" aria-expanded="true">☰ Menu</button><div style="flex:1;min-width:0"><h1 id="chatTitle">PLQNX CORE ✧</h1><div class="subtitle" id="status" aria-live="polite">✦ Preparing your workspace…</div></div><div><span class="small" id="username"></span> <button class="btn" id="settingsOpen" type="button" aria-label="Workspace settings" title="Workspace settings">⚙</button> <button class="btn hidden" id="renameChat" type="button" title="Rename this conversation">✎ Rename</button> <button class="btn hidden" id="exportChat" type="button" title="Download this conversation as a text file">↓ Export</button> <button class="btn danger hidden" id="deleteChat" type="button">Delete chat</button></div></div>
     <div class="feed" id="feed" aria-live="polite"><div class="welcome" id="welcome"><div class="orb"></div><h2>From the smallest to the infinite.</h2><p>Private beta with saved chats. Sign in to begin.</p></div></div>
     <button class="lumina-jump hidden" id="jumpLatest" type="button" aria-label="Scroll to the latest message">↓ Latest</button>
     <form class="composer" id="chatForm"><textarea id="prompt" placeholder="Ask anything. Discover everything…" aria-label="Message PLQNX CORE" maxlength="1000" rows="2" required></textarea><button class="btn primary" id="send" type="submit">Send ↗</button></form>
@@ -244,6 +273,17 @@ body:after,.welcome .orb,.thinking-dots:after,.message{animation:none!important}
     <p class="notice">Private testing only. Keep your invitation code and password private. Accounts are limited during beta.</p>
   </form>
 </div>
+<dialog id="workspaceSettings" class="core-settings" aria-labelledby="workspaceSettingsTitle">
+  <form method="dialog" class="settings-panel">
+    <div class="settings-heading"><div><div class="label">YOUR WORKSPACE</div><h2 id="workspaceSettingsTitle">Make CORE yours.</h2><p>Display preferences stay in this browser. Account settings are not available in the beta.</p></div><button type="submit" class="btn" aria-label="Close settings">✕</button></div>
+    <label for="coreTextSize">Text size</label>
+    <select id="coreTextSize"><option value="normal">Comfortable</option><option value="large">Large</option><option value="extra">Extra large</option></select>
+    <label class="settings-check"><input id="coreReduceMotion" type="checkbox"><span>Reduce decorative animations<small>Keep the interface calm and still.</small></span></label>
+    <label class="settings-check"><input id="coreCompact" type="checkbox"><span>Compact conversation spacing<small>See more messages at once.</small></span></label>
+    <div class="settings-links"><a href="./faq.html">Help &amp; FAQ ↗</a><a href="./privacy.html">Privacy notice ↗</a><a href="./contact.html">Send feedback ↗</a></div>
+    <button type="submit" class="btn primary">Done ✓</button>
+  </form>
+</dialog>
 <script>
 (()=>{
 "use strict";
@@ -253,6 +293,23 @@ let access=sessionStorage.getItem("plqnx_v3_token")||"";
 let name=sessionStorage.getItem("plqnx_v3_name")||"";
 let current="",mode="login",busy=false,convos=[],canRename=false;
 const status=t=>el("status").textContent=t;
+const settings=el("workspaceSettings");
+const savedPrefs=(()=>{try{return JSON.parse(localStorage.getItem("plqnx_display_preferences")||"{}")}catch{return {}}})();
+const prefs={text:["normal","large","extra"].includes(savedPrefs.text)?savedPrefs.text:"normal",reduceMotion:!!savedPrefs.reduceMotion,compact:!!savedPrefs.compact};
+function applyPrefs(){
+  document.body.dataset.textSize=prefs.text;
+  document.body.classList.toggle("core-reduce-motion",prefs.reduceMotion);
+  document.body.classList.toggle("core-compact",prefs.compact);
+  el("coreTextSize").value=prefs.text;
+  el("coreReduceMotion").checked=prefs.reduceMotion;
+  el("coreCompact").checked=prefs.compact;
+  try{localStorage.setItem("plqnx_display_preferences",JSON.stringify(prefs))}catch{}
+}
+applyPrefs();
+el("settingsOpen").addEventListener("click",()=>settings.showModal());
+el("coreTextSize").addEventListener("change",e=>{prefs.text=e.target.value;applyPrefs()});
+el("coreReduceMotion").addEventListener("change",e=>{prefs.reduceMotion=e.target.checked;applyPrefs()});
+el("coreCompact").addEventListener("change",e=>{prefs.compact=e.target.checked;applyPrefs()});
 function resizePrompt(){
   const input=el("prompt");input.style.height="auto";
   input.style.height=Math.min(input.scrollHeight,170)+"px";
