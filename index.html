@@ -128,7 +128,7 @@ main section:not(.hero){position:relative;scroll-margin-top:100px}
 <header class="eclipse-top" aria-label="PLQNX command dock">
   <a class="eclipse-brand" href="./"><i>✧</i><span>PLQNX<small>ADAPTIVE AI · PRIVATE BETA</small></span></a>
   <div class="eclipse-top-actions">
-    <button class="eclipse-pillbtn optional" id="soundToggle" type="button">Sound off</button><button class="eclipse-pillbtn optional" id="historyClear" type="button" title="Forget recent command intents on this device">Clear local history</button>
+    <button class="eclipse-pillbtn optional" id="soundToggle" type="button">Sound off</button><button class="eclipse-pillbtn optional" id="historyOpt" type="button" aria-pressed="false" title="Choose whether to remember recent commands on this browser">Local memory off</button><button class="eclipse-pillbtn optional" id="historyClear" type="button" title="Forget recent command intents on this device">Clear local history</button>
     <a class="eclipse-pillbtn optional" href="./about.html">About</a>
     <a class="eclipse-pillbtn primary" href="./core.html">Open CORE ↗</a>
   </div>
@@ -145,7 +145,7 @@ main section:not(.hero){position:relative;scroll-margin-top:100px}
         <textarea id="commandInput" rows="2" maxlength="1200" placeholder="Tell PLQNX what you want to accomplish…"></textarea>
         <div class="command-row">
           <div class="command-meta"><span class="command-mode" id="commandMode">EXPLORE MODE</span><span class="command-speed" id="commandSpeed">adaptive signal</span></div>
-          <div class="command-actions"><button class="command-mic" id="commandMic" type="button" aria-label="Speak your intent">⌁</button><button class="command-send" type="submit">Enter CORE ↗</button></div>
+          <div class="command-actions"><label class="command-language" for="commandLanguage"><span class="skip">Voice language</span><select id="commandLanguage" aria-label="Voice language"><option value="en-IN">EN</option><option value="te-IN">తెలుగు</option></select></label><button class="command-mic" id="commandMic" type="button" aria-label="Speak your intent">⌁</button><button class="command-send" type="submit">Enter CORE ↗</button></div>
         </div>
       </form>
       <div class="context-strip" aria-label="Starter intents">
@@ -156,14 +156,14 @@ main section:not(.hero){position:relative;scroll-margin-top:100px}
       </div>
     </div>
   </div>
-  <div class="predictive" id="predictiveTools" aria-live="polite"></div>
+  <div class="predictive" id="predictiveTools" aria-label="Suggested tools"></div>
   <section class="intent-workbench eclipse-glass" id="intentWorkbench" hidden aria-labelledby="workbenchTitle">
     <div class="workbench-heading"><div><div class="eclipse-kicker" id="workbenchLabel">CONTEXTUAL TOOL</div><h2 id="workbenchTitle">Your workspace, on demand.</h2><p id="workbenchDescription">Your command can open an actual tool right here.</p></div><button type="button" class="eclipse-pillbtn" id="workbenchClose" aria-label="Close tool">✕ Close</button></div>
     <div id="workbenchBody"></div>
     <div class="workbench-footer"><button class="eclipse-pillbtn primary" type="button" id="workbenchCore">Continue with CORE ↗</button><span>Local tools process your entries in this browser. Sending to CORE requires sign-in and uses the external AI service.</span></div>
   </section>
   <div class="eclipse-status-grid">
-    <article class="eclipse-glass"><div class="eclipse-kicker" id="returnLabel">RECENT INTENT · THIS DEVICE</div><h3>Your return brief</h3><p>PLQNX surfaces your recent command intents locally so you can resume without digging through menus. This is not a claim that an AI agent worked while your browser was closed.</p><div class="return-items" id="returnItems"></div></article>
+    <article class="eclipse-glass"><div class="eclipse-kicker" id="returnLabel">RECENT INTENT · THIS DEVICE</div><h3>Your return brief</h3><p>PLQNX surfaces your recent command intents locally so you can resume without digging through menus. This browser-only brief does not imply background AI work. Scheduled agents require a separate opt-in service.</p><div class="return-items" id="returnItems"></div><p class="local-memory-notice" id="localMemoryNotice">Local command history is off by default. Choose Local memory on to enable it.</p></article>
     <article class="eclipse-glass live-signal"><div><div class="eclipse-kicker">LIVE ADAPTATION</div><h3>The interface listens to context.</h3><p>Time of day, your current intent and typing rhythm influence the visual state and surfaced tools. Processing stays in your browser until you enter CORE.</p></div><div class="signal-orb" aria-hidden="true"></div></article>
   </div>
 </div></section>
