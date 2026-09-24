@@ -55,57 +55,65 @@ const cleanTitle=s=>s.replace(/\s+/g," ").trim().slice(0,68)||"New chat";
 async function gemini(env,contents) {
   const model=env.GEMINI_MODEL||"gemini-3.5-flash-lite";
   if(!/^gemini-[a-z0-9.-]+$/.test(model))throw new Error("Invalid model configuration.");
-  const started=Date.now();
+  const started=Date.now(),deadline=started+45000;
   const charCount=contents.reduce((total,item)=>total+(item.parts||[]).reduce((sum,p)=>sum+(p.text||"").length,0),0);
-  let response;
-  try {
-    response=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+
-      encodeURIComponent(model)+":generateContent",{
-        method:"POST",
-        headers:{"Content-Type":"application/json","x-goog-api-key":env.GEMINI_API_KEY},
-        body:JSON.stringify({
-          systemInstruction:{parts:[{text:
-            "You are PLQNX CORE, a helpful early-stage AI assistant for learning and coding. "+
-            "Use Telugu when the user writes Telugu. Do not claim PLQNX is incorporated or invent actions."
-          }]},
-          contents,generationConfig:{maxOutputTokens:450}
-        }),
-        signal:AbortSignal.timeout(45000)
-      });
-  } catch(error) {
-    const timeout=error?.name==="TimeoutError"||error?.name==="AbortError";
-    console.warn("PLQNX_AI_DIAGNOSTIC",JSON.stringify({
-      phase:"upstream_fetch",model,turns:contents.length,chars:charCount,
-      durationMs:Date.now()-started,result:timeout?"TIMEOUT":"NETWORK_ERROR"
-    }));
-    throw new Error(timeout?"Gemini timed out waiting for an API response.":"Gemini connection failed; see the sanitized Worker diagnostic.");
-  }
-  if(!response.ok) {
-    // Only emit safe structural fields; Google's raw error text can include
-    // account/project details. Never log headers or request/response payloads.
-    let status="UNKNOWN";
+  const url="https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(model)+":generateContent";
+  const body=JSON.stringify({
+    systemInstruction:{parts:[{text:
+      "You are PLQNX CORE, a helpful early-stage AI assistant for learning and coding. "+
+      "Use Telugu when the user writes Telugu. Do not claim PLQNX is incorporated or invent actions."
+    }]},
+    contents,generationConfig:{maxOutputTokens:450}
+  });
+  // At most 3 total requests. Only HTTP 503 is retried, with modest backoff
+  // and jitter. No retry on network timeout, 4xx, or an unsuccessful parse.
+  for(let attempt=1;attempt<=3;attempt++){
+    const remaining=deadline-Date.now();
+    if(remaining<4000)throw new Error("Gemini did not complete within the request deadline.");
+    let response;
     try {
-      const body=await response.json();
-      const candidate=body?.error?.status;
-      if(typeof candidate==="string"&&/^[A-Z_]{2,50}$/.test(candidate))status=candidate;
-    }catch{}
-    console.warn("PLQNX_AI_DIAGNOSTIC",JSON.stringify({
-      phase:"upstream_response",model,turns:contents.length,chars:charCount,
-      durationMs:Date.now()-started,httpStatus:response.status,upstreamStatus:status
+      response=await fetch(url,{
+        method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":env.GEMINI_API_KEY},
+        body,signal:AbortSignal.timeout(remaining)
+      });
+    } catch(error) {
+      const timeout=error?.name==="TimeoutError"||error?.name==="AbortError";
+      console.warn("PLQNX_AI_DIAGNOSTIC",JSON.stringify({
+        phase:"upstream_fetch",model,turns:contents.length,chars:charCount,attempt,
+        durationMs:Date.now()-started,result:timeout?"TIMEOUT":"NETWORK_ERROR"
+      }));
+      throw new Error(timeout?"Gemini timed out waiting for an API response.":"Gemini connection failed; see the sanitized Worker diagnostic.");
+    }
+    if(!response.ok){
+      let status="UNKNOWN";
+      try {
+        const errorBody=await response.json();
+        const candidate=errorBody?.error?.status;
+        if(typeof candidate==="string"&&/^[A-Z_]{2,50}$/.test(candidate))status=candidate;
+      }catch{}
+      console.warn("PLQNX_AI_DIAGNOSTIC",JSON.stringify({
+        phase:"upstream_response",model,turns:contents.length,chars:charCount,attempt,
+        durationMs:Date.now()-started,httpStatus:response.status,upstreamStatus:status
+      }));
+      if(response.status===503&&attempt<3&&deadline-Date.now()>7000){
+        const delay=Math.pow(2,attempt-1)*1000+Math.floor(Math.random()*350);
+        await new Promise(resolve=>setTimeout(resolve,delay));
+        continue;
+      }
+      const kind=response.status===503?"Gemini is currently unavailable (HTTP 503) even after limited retries. Try later.":response.status===429?"Gemini API quota/rate limit reached (HTTP 429).":response.status===404?"Gemini model unavailable (HTTP 404).":response.status===403?"Gemini API access denied (HTTP 403).":"Gemini API returned HTTP "+response.status+".";
+      const err=new Error(kind);err.httpStatus=response.status;throw err;
+    }
+    const data=await response.json();
+    const answer=(data.candidates?.[0]?.content?.parts||[])
+      .filter(p=>typeof p.text==="string").map(p=>p.text).join("").trim();
+    console.info("PLQNX_AI_DIAGNOSTIC",JSON.stringify({
+      phase:"upstream_response",model,turns:contents.length,chars:charCount,attempt,
+      durationMs:Date.now()-started,httpStatus:200,hasText:!!answer
     }));
-    const kind=response.status===503?"Gemini API returned HTTP 503 (temporarily unavailable).":response.status===429?"Gemini API quota/rate limit reached (HTTP 429).":response.status===404?"Gemini model unavailable (HTTP 404).":response.status===403?"Gemini API access denied (HTTP 403).":"Gemini API returned HTTP "+response.status+".";
-    const err=new Error(kind);err.httpStatus=response.status;
-    throw err;
+    if(!answer)throw new Error("Gemini returned no text.");
+    return answer.slice(0,8000);
   }
-  const data=await response.json();
-  const answer=(data.candidates?.[0]?.content?.parts||[])
-    .filter(p=>typeof p.text==="string").map(p=>p.text).join("").trim();
-  console.info("PLQNX_AI_DIAGNOSTIC",JSON.stringify({
-    phase:"upstream_response",model,turns:contents.length,chars:charCount,
-    durationMs:Date.now()-started,httpStatus:200,hasText:!!answer
-  }));
-  if(!answer)throw new Error("Gemini returned no text.");
-  return answer.slice(0,8000);
+  throw new Error("Gemini is temporarily unavailable.");
 }
 
 // V4 D1 throttle: requires backend/security-v4.sql before deploying this file.
