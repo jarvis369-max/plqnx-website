@@ -237,6 +237,7 @@ body.core-reduce-motion:after,body.core-reduce-motion .message,body.core-reduce-
 body.core-reduce-motion .feed{scroll-behavior:auto!important}
 body.core-reduce-motion .btn,body.core-reduce-motion .conversation,body.core-reduce-motion .lumina-prompt{transition:none!important}
 @media(max-width:730px){#settingsOpen{min-width:34px}.settings-panel{gap:12px}}
+.core-guide-panel{min-height:365px}.core-guide-stage{min-height:165px;padding:13px 0}.guide-symbol{display:grid;place-items:center;width:58px;height:58px;border-radius:20px;background:linear-gradient(130deg,#f5e2d0,#ecede1);border:1px solid #e4d0ba;font-size:30px;color:#a57c58;box-shadow:0 10px 25px #a9846321}.core-guide-stage h3{font-size:24px;margin:16px 0 7px;line-height:1.2;letter-spacing:-.045em}.core-guide-stage p{font-size:13px;color:#786859;line-height:1.8;margin:0}.core-guide-progress{display:flex;gap:7px;margin:3px 0}.core-guide-progress span{width:22px;height:5px;border-radius:9px;background:#e6d8ca;transition:background .2s}.core-guide-progress span.active{background:#b58c6d}.core-guide-actions{display:flex;gap:8px;align-items:center;justify-content:space-between}.core-guide-actions .btn{padding:10px 12px}.core-guide-actions .btn.primary{min-width:91px}#guideOpen{white-space:nowrap}@media(max-width:730px){#guideOpen{font-size:10px;padding:7px 9px}.core-guide-actions{flex-wrap:wrap}}@media(prefers-reduced-motion:reduce){.core-guide-progress span{transition:none}}
 </style>
 </head>
 <body>
@@ -251,7 +252,7 @@ body.core-reduce-motion .btn,body.core-reduce-motion .conversation,body.core-red
     <div class="aside-bottom"><div class="small">Private beta · Up to 25 requests per user per day. Never send sensitive information.</div><nav class="core-links" aria-label="PLQNX information"><a href="./">Home</a><a href="./faq.html">Help &amp; FAQ</a><a href="./contact.html">Feedback</a><a href="./privacy.html">Privacy</a></nav><button class="btn" id="logout" type="button">Sign out</button></div>
   </aside>
   <main>
-    <div class="top"><button class="btn sidebar-toggle" id="openSidebar" type="button" aria-label="Open saved conversations" aria-expanded="true">☰ Menu</button><div style="flex:1;min-width:0"><h1 id="chatTitle">PLQNX CORE ✧</h1><div class="subtitle" id="status" aria-live="polite">✦ Preparing your workspace…</div></div><div><span class="small" id="username"></span> <button class="btn" id="settingsOpen" type="button" aria-label="Workspace settings" title="Workspace settings">⚙</button> <button class="btn hidden" id="renameChat" type="button" title="Rename this conversation">✎ Rename</button> <button class="btn hidden" id="exportChat" type="button" title="Download this conversation as a text file">↓ Export</button> <button class="btn danger hidden" id="deleteChat" type="button">Delete chat</button></div></div>
+    <div class="top"><button class="btn sidebar-toggle" id="openSidebar" type="button" aria-label="Open saved conversations" aria-expanded="true">☰ Menu</button><div style="flex:1;min-width:0"><h1 id="chatTitle">PLQNX CORE ✧</h1><div class="subtitle" id="status" aria-live="polite">✦ Preparing your workspace…</div></div><div><span class="small" id="username"></span> <button class="btn" id="guideOpen" type="button" title="New to CORE? Take the tour">? Guide</button> <button class="btn" id="settingsOpen" type="button" aria-label="Workspace settings" title="Workspace settings">⚙</button> <button class="btn hidden" id="renameChat" type="button" title="Rename this conversation">✎ Rename</button> <button class="btn hidden" id="exportChat" type="button" title="Download this conversation as a text file">↓ Export</button> <button class="btn danger hidden" id="deleteChat" type="button">Delete chat</button></div></div>
     <div class="feed" id="feed" aria-live="polite"><div class="welcome" id="welcome"><div class="orb"></div><h2>From the smallest to the infinite.</h2><p>Private beta with saved chats. Sign in to begin.</p></div></div>
     <button class="lumina-jump hidden" id="jumpLatest" type="button" aria-label="Scroll to the latest message">↓ Latest</button>
     <form class="composer" id="chatForm"><textarea id="prompt" placeholder="Ask anything. Discover everything…" aria-label="Message PLQNX CORE" maxlength="1000" rows="2" required></textarea><button class="btn primary" id="send" type="submit">Send ↗</button></form>
@@ -273,6 +274,12 @@ body.core-reduce-motion .btn,body.core-reduce-motion .conversation,body.core-red
     <p class="notice">Private testing only. Keep your invitation code and password private. Accounts are limited during beta.</p>
   </form>
 </div>
+<dialog id="coreGuide" class="core-settings" aria-labelledby="coreGuideTitle">
+  <div class="settings-panel core-guide-panel"><div class="settings-heading"><div><div class="label">WELCOME TO YOUR WORKSPACE</div><h2 id="coreGuideTitle">Explore PLQNX CORE.</h2><p>A quick guide to getting started with the private beta.</p></div><button id="guideClose" class="btn" type="button" aria-label="Close guide">✕</button></div>
+  <div class="core-guide-stage" id="guideStage" aria-live="polite"></div>
+  <div class="core-guide-progress" id="guideProgress" aria-label="Guide progress"></div>
+  <div class="core-guide-actions"><button type="button" class="btn" id="guideBack">← Back</button><button type="button" class="btn" id="guideSkip">Skip guide</button><button type="button" class="btn primary" id="guideNext">Next →</button></div>
+</div></dialog>
 <dialog id="workspaceSettings" class="core-settings" aria-labelledby="workspaceSettingsTitle">
   <form method="dialog" class="settings-panel">
     <div class="settings-heading"><div><div class="label">YOUR WORKSPACE</div><h2 id="workspaceSettingsTitle">Make CORE yours.</h2><p>Display preferences stay in this browser. Account settings are not available in the beta.</p></div><button type="submit" class="btn" aria-label="Close settings">✕</button></div>
@@ -307,6 +314,39 @@ function applyPrefs(){
 }
 applyPrefs();
 el("settingsOpen").addEventListener("click",()=>settings.showModal());
+const guide=el("coreGuide");
+const guideSteps=[
+  ["✧","Start with a question","Ask PLQNX CORE to explain a topic, help with code or explore a creative idea. Starter prompts appear in a new, empty conversation."],
+  ["▤","Return to your ideas","Your signed-in conversations are saved. Use the sidebar to reopen recent chats, search titles, and create a fresh conversation."],
+  ["⌘","Make the workspace yours","Use Rename and Export on a saved chat. Press Ctrl + K on Windows or Cmd + K on Mac to search saved conversation titles."],
+  ["✦","Know the beta limits","CORE is invite-only. You have up to 25 AI requests per day. Replies can be inaccurate. Don't enter passwords or other sensitive information."],
+  ["↗","Share what you discover","Use the Feedback link in the sidebar to prepare a bug report or improvement suggestion. The current feedback page downloads a report; it doesn't submit it automatically."]
+];
+let guidePosition=0;
+function renderGuide(){
+  const [symbol,title,description]=guideSteps[guidePosition];
+  const stage=el("guideStage");stage.replaceChildren();
+  const visual=document.createElement("div");visual.className="guide-symbol";visual.textContent=symbol;
+  const heading=document.createElement("h3");heading.textContent=title;
+  const detail=document.createElement("p");detail.textContent=description;
+  stage.append(visual,heading,detail);
+  el("guideProgress").replaceChildren();
+  guideSteps.forEach((_,index)=>{const dot=document.createElement("span");dot.className=index===guidePosition?"active":"";dot.setAttribute("aria-label","Step "+(index+1));el("guideProgress").append(dot)});
+  el("guideBack").disabled=guidePosition===0;
+  el("guideNext").textContent=guidePosition===guideSteps.length-1?"Finish ✓":"Next →";
+}
+function closeGuide(){
+  guide.close();
+  try{localStorage.setItem("plqnx_guide_seen","1")}catch{}
+}
+el("guideOpen").addEventListener("click",()=>{guidePosition=0;renderGuide();guide.showModal()});
+el("guideClose").addEventListener("click",closeGuide);
+el("guideSkip").addEventListener("click",closeGuide);
+el("guideBack").addEventListener("click",()=>{if(guidePosition>0){guidePosition--;renderGuide()}});
+el("guideNext").addEventListener("click",()=>{if(guidePosition<guideSteps.length-1){guidePosition++;renderGuide()}else closeGuide()});
+guide.addEventListener("close",()=>{try{localStorage.setItem("plqnx_guide_seen","1")}catch{}});
+function offerGuideOnce(){try{if(localStorage.getItem("plqnx_guide_seen"))return;localStorage.setItem("plqnx_guide_seen","1")}catch{return}guidePosition=0;renderGuide();guide.showModal()}
+
 el("coreTextSize").addEventListener("change",e=>{prefs.text=e.target.value;applyPrefs()});
 el("coreReduceMotion").addEventListener("change",e=>{prefs.reduceMotion=e.target.checked;applyPrefs()});
 el("coreCompact").addEventListener("change",e=>{prefs.compact=e.target.checked;applyPrefs()});
@@ -539,6 +579,7 @@ async function ready(){
         el("username").textContent=name;authScreen(false);await loadList();
         if(convos.length)await openChat(convos[0].id);
         else await newChat();
+        offerGuideOnce();
       }catch{access="";sessionStorage.removeItem("plqnx_v3_token");authScreen(true);status("Please sign in.");}
     }else{authScreen(true);status("Sign in to continue.");}
   }catch(error){authScreen(true);status(error.message);showError(error.message)}
@@ -557,6 +598,7 @@ el("auth").addEventListener("submit",async event=>{
     el("loginPassword").value="";el("invite").value="";
     authScreen(false);el("username").textContent=name;
     await loadList();if(convos.length)await openChat(convos[0].id);else await newChat();
+    offerGuideOnce();
   }catch(error){showError(error.message)}
   finally{el("authSubmit").disabled=false}
 });
