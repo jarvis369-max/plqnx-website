@@ -265,6 +265,7 @@ body.core-reduce-motion .mode-chip{transition:none}
 .core-voice-status{font-size:10px;color:#927865;text-align:center;margin:0;padding:4px 12px 6px;background:#fffefaeb}
 @media(max-width:730px){.composer{gap:6px!important}.core-speech-language select{max-width:70px;font-size:11px;padding:8px 4px}.core-mic{min-width:37px;min-height:42px;font-size:17px}.core-voice-status{font-size:9px;padding:3px 8px 6px}.composer .btn.primary{padding-inline:10px}}
 @media(prefers-reduced-motion:reduce){.core-mic.listening{animation:none}.core-mic{transition:none}}
+.core-service-check{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:7px 11px;padding:5px 12px 7px;background:#fffefaeb;font-size:10px;color:#8b7765;text-align:center}.core-service-check .btn{font-size:10px;padding:5px 9px;background:#f6ebdf;color:#765b45;border-color:#e0ccb9}.core-service-check span{max-width:650px}@media(max-width:730px){.core-service-check{font-size:9px;padding:5px}.core-service-check span{width:100%}}
 </style>
 <link rel="stylesheet" href="./core-light.css">
 </head>
@@ -293,6 +294,7 @@ body.core-reduce-motion .mode-chip{transition:none}
       <button class="btn primary" id="send" type="submit">Send ↗</button>
     </form>
     <p class="core-voice-status" id="coreVoiceStatus" role="status" aria-live="polite">Voice input requires microphone permission and browser support. Dictation is never sent automatically.</p>
+    <div class="core-service-check"><button class="btn" id="coreHealthCheck" type="button">Check AI connection</button><span id="coreHealthStatus" role="status" aria-live="polite">Chat needs the Cloudflare Worker and Gemini to respond.</span></div>
     <div class="footer-note">PLQNX is an early-stage AI project. Responses may be inaccurate. Avoid sharing sensitive information. <button id="coreSound" type="button" class="core-sound" aria-pressed="false">♪ Sound off</button></div>
   </main>
 </div>
@@ -516,6 +518,18 @@ el("coreCompact").addEventListener("change",e=>{prefs.compact=e.target.checked;a
 /* Speech recognition is a browser capability, independent of the paid AI backend.
    Keep the microphone visible even on unsupported browsers and explain why. */
 const mic=el("coreMic"),micLanguage=el("coreSpeechLanguage"),voiceStatus=el("coreVoiceStatus");
+el("coreHealthCheck").addEventListener("click",async()=>{
+ const button=el("coreHealthCheck"),result=el("coreHealthStatus");
+ button.disabled=true;result.textContent="Checking Worker availability…";
+ try{
+  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),10000);
+  let response;try{response=await fetch(API+"/v1/status",{signal:controller.signal,cache:"no-store"});}finally{clearTimeout(timeout)}
+  if(!response.ok)throw Error("Worker returned HTTP "+response.status);
+  const info=await response.json();
+  result.textContent="Worker online ("+(info.version||"status received")+"). This confirms the Worker responds, but not Gemini generation. If chat still times out, check Gemini usage and Cloudflare Worker logs.";
+ }catch(error){result.textContent="Worker check failed: "+(error?.name==="AbortError"?"no response within 10 seconds":error.message)+". Inspect Cloudflare deployment or your connection."}
+ finally{button.disabled=false}
+});
 const SpeechAPI=window.SpeechRecognition||window.webkitSpeechRecognition;
 let recognition=null,listening=false,voiceBase="";
 function stopMic(){
