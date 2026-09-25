@@ -273,7 +273,15 @@ export default {
         contents.push({role:"user",parts:[{text:message.trim()}]});
         let answer;
         try{answer=await gemini(env,contents)}
-        catch(error){return reply({error:error.message||"AI unavailable."},502,origin)}
+        catch(error){
+          // A failed generation saves no messages, so restore the reserved request.
+          try{
+            await env.DB.prepare(
+              "UPDATE daily_usage SET requests=CASE WHEN requests>0 THEN requests-1 ELSE 0 END WHERE user_id=? AND day=?"
+            ).bind(user.id,day).run();
+          }catch{console.warn("PLQNX quota refund failed")}
+          return reply({error:error.message||"AI unavailable."},502,origin);
+        }
         const title=convo.title==="New chat"?cleanTitle(message):convo.title;
         await env.DB.batch([
           env.DB.prepare("INSERT INTO messages(id,conversation_id,role,content) VALUES(?,?,?,?)")
