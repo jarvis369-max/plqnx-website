@@ -20,6 +20,16 @@ def parse_args():
     parser.add_argument("--learning-rate", type=float, default=1e-4)
     parser.add_argument("--max-length", type=int, default=2048)
     parser.add_argument("--eval-size", type=float, default=0.08)
+    parser.add_argument(
+        "--hub-repo",
+        default="",
+        help="Optional Hugging Face repo id, e.g. username/plqnx-indic-4b-lora",
+    )
+    parser.add_argument(
+        "--public-hub-repo",
+        action="store_true",
+        help="Make the uploaded adapter public. Default is private.",
+    )
     return parser.parse_args()
 
 
@@ -115,6 +125,24 @@ def main():
         json.dumps(metadata, indent=2), encoding="utf-8"
     )
     print(f"Saved PLQNX LoRA adapter to {args.output_dir}")
+
+    if args.hub_repo:
+        from huggingface_hub import HfApi
+
+        api = HfApi()
+        api.create_repo(
+            repo_id=args.hub_repo,
+            repo_type="model",
+            private=not args.public_hub_repo,
+            exist_ok=True,
+        )
+        api.upload_folder(
+            repo_id=args.hub_repo,
+            repo_type="model",
+            folder_path=args.output_dir,
+            commit_message="Upload PLQNX QLoRA adapter",
+        )
+        print(f"Uploaded adapter to https://huggingface.co/{args.hub_repo}")
 
 
 if __name__ == "__main__":
