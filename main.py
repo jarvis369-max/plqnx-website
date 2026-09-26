@@ -8,8 +8,8 @@ BASE_DIR = Path(__file__).resolve().parent
 
 app = FastAPI(
     title="PLQNX CORE",
-    version="3.0.0",
-    description="Free in-browser multimodal AI workspace powered by WebLLM.",
+    version="4.0.0",
+    description="Browser-first multimodal AI workspace using WebGPU, WebLLM and Transformers.js.",
 )
 
 @app.get("/")
@@ -20,18 +20,48 @@ async def home():
 async def legacy_core():
     return RedirectResponse(url="/", status_code=307)
 
+@app.get("/site.css")
+async def site_css():
+    return FileResponse(BASE_DIR / "site.css", media_type="text/css")
+
+@app.get("/app.js")
+async def app_js():
+    return FileResponse(BASE_DIR / "app.js", media_type="text/javascript")
+
+@app.get("/manifest.webmanifest")
+async def manifest():
+    return FileResponse(
+        BASE_DIR / "manifest.webmanifest",
+        media_type="application/manifest+json",
+    )
+
+@app.get("/sw.js")
+async def service_worker():
+    response = FileResponse(BASE_DIR / "sw.js", media_type="text/javascript")
+    response.headers["Service-Worker-Allowed"] = "/"
+    response.headers["Cache-Control"] = "no-cache"
+    return response
+
 @app.get("/health")
 async def health():
     return {
         "ok": True,
-        "ai_runtime": "browser-webgpu",
-        "provider": "MLC WebLLM",
-        "model": "Qwen2.5-0.5B-Instruct-q4f16_1-MLC",
+        "version": "4.0.0",
+        "runtime": "browser-first",
         "server_api_key_required": False,
+        "capabilities": {
+            "text": "MLC WebLLM / Qwen2.5 adaptive 0.5B-3B",
+            "vision": "Transformers.js image captioning + optional OCR",
+            "speech_to_text": "Transformers.js Whisper",
+            "text_to_speech": "Browser speech synthesis",
+            "documents": "Browser PDF/text extraction",
+            "code_canvas": "Markdown, syntax highlighting and sandboxed HTML",
+        },
     }
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
