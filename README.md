@@ -6,10 +6,12 @@ PLQNX CORE is a browser-first multimodal AI workspace designed so users can actu
 
 Railway serves the application shell. AI inference runs primarily in the visitor's browser:
 
-- **Text + code:** MLC WebLLM with adaptive Qwen2.5 models
-  - Lite: 0.5B
-  - Balanced: 1.5B
-  - Pro: 3B
+- **Text + code:** MLC WebLLM with instant background startup
+  - Instant default: SmolLM2 360M
+  - Balanced manual upgrade: Qwen2.5 1.5B
+  - Pro manual upgrade: Qwen2.5 3B
+- The interface renders immediately; model warm-up no longer blocks the whole screen.
+- A prompt entered during warm-up is queued and runs automatically when the model is ready.
 - **Images:** Transformers.js image captioning, then the text model reasons over the extracted image context
 - **OCR:** optional printed-text extraction for screenshots/documents
 - **Speech-to-text:** multilingual Whisper Tiny through Transformers.js
