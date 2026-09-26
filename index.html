@@ -21,12 +21,12 @@
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-css.min.js"></script>
 </head>
 <body>
-  <div class="loader" id="loader">
+  <div class="loader hide" id="loader">
     <div class="loadwrap">
       <div class="loadbrand"><b>P</b><span>PLQNX CORE</span></div>
-      <div class="loadcopy" id="loadCopy">Detecting your device…</div>
+      <div class="loadcopy" id="loadCopy">Starting PLQNX…</div>
       <div class="loadbar"><i id="loadBar"></i></div>
-      <div class="loadnote" id="loadNote">The first run downloads the selected model once, then your browser caches it.</div>
+      <div class="loadnote" id="loadNote">The workspace opens immediately while the local AI warms in the background.</div>
     </div>
   </div>
 
@@ -45,8 +45,8 @@
       </div>
       <div class="topactions">
         <select id="modelSelect" class="model-select" aria-label="Text model">
-          <option value="auto">Auto model</option>
-          <option value="lite">Lite · 0.5B</option>
+          <option value="auto">Instant start</option>
+          <option value="lite">Instant · 360M</option>
           <option value="balanced">Balanced · 1.5B</option>
           <option value="pro">Pro · 3B</option>
         </select>
@@ -96,7 +96,7 @@
             <button class="sendbtn" id="sendBtn" aria-label="Send">↑</button>
           </div>
           <div class="composerfoot">
-            <span id="modelFoot">Preparing local model…</span>
+            <span id="modelFoot">Instant model warming in background…</span>
             <label class="toggle"><input id="voiceReply" type="checkbox"> Speak replies</label>
           </div>
         </div>
