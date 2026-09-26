@@ -764,9 +764,17 @@ function restoreHistory() {
   if (last) renderOutput(last.content);
 }
 
-function registerServiceWorker() {
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/sw.js").catch(() => {});
+async function removeLegacyServiceWorkers() {
+  if (!("serviceWorker" in navigator)) return;
+  try {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(regs.map((reg) => reg.unregister()));
+  } catch {}
+  if ("caches" in window) {
+    try {
+      const keys = await caches.keys();
+      await Promise.all(keys.filter((key) => key.startsWith("plqnx-core-")).map((key) => caches.delete(key)));
+    } catch {}
   }
 }
 
@@ -810,7 +818,7 @@ els.modelSelect.addEventListener("change", async () => {
 setupTabs();
 setupDragDrop();
 restoreHistory();
-registerServiceWorker();
+removeLegacyServiceWorkers();
 renderContexts();
 
 // Never block the interface on a multi-hundred-MB model download.
