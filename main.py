@@ -6,25 +6,21 @@ import tempfile
 from pathlib import Path
 from typing import AsyncIterator, Literal
 
-from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
 from openai import AsyncOpenAI
 from pydantic import BaseModel, Field
 
-load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 OPENAI_TEXT_MODEL = os.getenv("OPENAI_TEXT_MODEL", "gpt-5.6-luna")
 OPENAI_VOICE_MODEL = os.getenv("OPENAI_VOICE_MODEL", "gpt-realtime-1.5")
 OPENAI_STT_MODEL = os.getenv("OPENAI_STT_MODEL", "gpt-4o-mini-transcribe")
 OPENAI_TTS_MODEL = os.getenv("OPENAI_TTS_MODEL", "gpt-4o-mini-tts")
 OPENAI_TTS_VOICE = os.getenv("OPENAI_TTS_VOICE", "alloy")
 
-client = AsyncOpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
 app = FastAPI(
     title="PLQNX CORE",
@@ -59,12 +55,14 @@ class ChatRequest(BaseModel):
 
 
 def require_client() -> AsyncOpenAI:
-    if client is None:
+    # Read the secret at request time so Railway-injected variables are always used.
+    api_key = (os.getenv("OPENAI_API_KEY") or "").strip()
+    if not api_key:
         raise HTTPException(
             status_code=503,
             detail="OPENAI_API_KEY is not configured on the server.",
         )
-    return client
+    return AsyncOpenAI(api_key=api_key)
 
 
 def response_input(history: list[ChatMessage], message: str) -> list[dict]:
@@ -172,7 +170,7 @@ async def legacy_core():
 async def health():
     return {
         "ok": True,
-        "openai_configured": bool(OPENAI_API_KEY),
+        "openai_configured": bool((os.getenv("OPENAI_API_KEY") or "").strip()),
         "text_model": OPENAI_TEXT_MODEL,
         "voice_model": OPENAI_VOICE_MODEL,
         "stt_model": OPENAI_STT_MODEL,
@@ -184,7 +182,7 @@ async def health():
 async def providers():
     return {
         "provider": "OpenAI",
-        "configured": bool(OPENAI_API_KEY),
+        "configured": bool((os.getenv("OPENAI_API_KEY") or "").strip()),
         "text_model": OPENAI_TEXT_MODEL,
         "voice_model": OPENAI_VOICE_MODEL,
         "stt_model": OPENAI_STT_MODEL,
