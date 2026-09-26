@@ -46,11 +46,11 @@ async def service_worker():
 async def health():
     return {
         "ok": True,
-        "version": "4.0.0",
+        "version": "4.1.0",
         "runtime": "browser-first",
         "server_api_key_required": False,
         "capabilities": {
-            "text": "MLC WebLLM / Qwen2.5 adaptive 0.5B-3B",
+            "text": "MLC WebLLM / instant SmolLM2 360M + optional Qwen2.5 1.5B-3B",
             "vision": "Transformers.js image captioning + optional OCR",
             "speech_to_text": "Transformers.js Whisper",
             "text_to_speech": "Browser speech synthesis",
