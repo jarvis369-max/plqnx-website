@@ -1,64 +1,68 @@
-# PLQNX CORE — OpenAI Multimodal AI
+# PLQNX CORE — Multimodal browser AI
 
-PLQNX CORE is a focused full-stack multimodal AI web application powered only by OpenAI.
+PLQNX CORE is a browser-first multimodal AI workspace designed so users can actually use the AI without requiring a paid model API key.
 
-## Capabilities
+## Live architecture
 
-- Streaming text-to-text responses
-- Voice-to-text from the browser microphone
-- Voice-to-voice turn pipeline over WebSockets
-- Text-to-voice playback
-- Multilingual support for English and Indian languages
-- Split-screen chat + output/code canvas
-- Markdown rendering and syntax highlighting
-- Local browser conversation history
-- One AI provider only: OpenAI
+Railway serves the application shell. AI inference runs primarily in the visitor's browser:
 
-## Required secret
+- **Text + code:** MLC WebLLM with adaptive Qwen2.5 models
+  - Lite: 0.5B
+  - Balanced: 1.5B
+  - Pro: 3B
+- **Images:** Transformers.js image captioning, then the text model reasons over the extracted image context
+- **OCR:** optional printed-text extraction for screenshots/documents
+- **Speech-to-text:** multilingual Whisper Tiny through Transformers.js
+- **Speech output:** browser speech synthesis
+- **Documents:** local PDF and text extraction
+- **Code canvas:** Markdown rendering, syntax highlighting and sandboxed HTML execution
+- **Caching:** browser/model caches plus a service worker for the application shell
 
-The backend requires an OpenAI API key supplied securely by the deployment environment:
+No OpenAI, Anthropic, Vapi or Roomi API key is required by the deployed app.
 
-```text
-OPENAI_API_KEY=...
-```
+## Why browser-first
 
-Do not put the key inside `index.html`, commit it to GitHub, or expose it to browser JavaScript.
+The connected Hugging Face account currently cannot start paid GPU Jobs without compute credit, so production GPU fine-tuned inference is not available at zero cost. Browser WebGPU lets PLQNX remain usable immediately while the fine-tuning assets are prepared.
 
-## Optional model settings
+## Fine-tuning pipeline
 
-```text
-OPENAI_TEXT_MODEL=gpt-5.6-luna
-OPENAI_VOICE_MODEL=gpt-realtime-1.5
-OPENAI_STT_MODEL=gpt-4o-mini-transcribe
-OPENAI_TTS_MODEL=gpt-4o-mini-tts
-OPENAI_TTS_VOICE=alloy
-PORT=3000
-```
+The repository also includes a QLoRA training pipeline under `training/` targeting:
 
-OpenAI's current model catalog includes GPT-5.6 models for general work, GPT-Realtime models for voice, GPT-4o Mini TTS for speech synthesis, and GPT-4o Mini Transcribe for transcription.
+`dheeyantra/dhee-nxtgen-qwen3-indic`
 
-## Run
+Files include:
+
+- `training/train_qlora.py`
+- `training/prepare_dataset.py`
+- `training/evaluate.py`
+- `training/data/plqnx_train.jsonl`
+- `training/PLQNX_Finetune_Colab.ipynb`
+
+The training data mixer uses multilingual examples plus PLQNX-specific reviewed behavior examples. The current dataset is a pipeline seed, not yet a production-quality training corpus.
+
+## Run locally
 
 ```bash
 pip install -r requirements.txt
 uvicorn main:app --host 0.0.0.0 --port 3000
 ```
 
-## Routes
+Then open `http://localhost:3000`.
 
-- `GET /` — application
-- `GET /health` — configuration health
-- `GET /api/providers` — current OpenAI model configuration
-- `POST /api/chat` — streaming OpenAI response
-- `WS /ws/audio` — microphone audio → transcription → AI response → speech audio
+A recent Chromium browser with WebGPU provides the best experience.
+
+## Production roadmap
+
+1. Keep the browser runtime as the free/private fallback.
+2. Expand the reviewed fine-tuning and evaluation datasets.
+3. Train the QLoRA adapter on online GPU compute.
+4. Host the approved fine-tuned adapter behind vLLM.
+5. Add authenticated server routing so capable devices can choose local inference while heavier requests use hosted inference.
+6. Add persistent user accounts, encrypted conversation sync, rate limits and production observability.
 
 ## Security
 
-- API keys remain server-side.
-- The browser never receives the key.
-- Markdown is sanitized before rendering.
-- Before a public production launch, add authentication, rate limiting, persistent storage, abuse controls, monitoring and request quotas.
-
-## Hosting
-
-This app requires a Python/ASGI backend. GitHub Pages alone can only serve the static frontend and cannot run `main.py`. Deploy the repository to any host that supports Python/FastAPI and set `OPENAI_API_KEY` there as a secret.
+- No model provider API key is shipped to the browser.
+- Attached files are processed locally by default.
+- Generated HTML runs in a sandboxed iframe.
+- Conversation history is stored in browser localStorage.
