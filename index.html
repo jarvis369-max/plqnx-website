@@ -2,395 +2,135 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#0f5f49">
-  <title>PLQNX CORE | Free Multimodal AI</title>
-  <meta name="description" content="PLQNX CORE is a free in-browser multimodal AI workspace for text, voice and code.">
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#07130f">
+  <meta name="description" content="PLQNX CORE is a private multimodal AI workspace that runs text, vision and speech models directly in your browser.">
+  <meta name="application-name" content="PLQNX CORE">
+  <title>PLQNX CORE | Multimodal AI</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/site.css">
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-clike.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-markup.min.js"></script>
-  <style>
-    :root{color-scheme:light;--ink:#14251e;--muted:#6e7d75;--green:#0f5f49;--green2:#1a8f6b;--mint:#eff7f3;--line:#dfe8e3;--shadow:0 24px 70px rgba(20,83,62,.10)}
-    *{box-sizing:border-box}
-    html,body{height:100%;margin:0}
-    body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;background:#f7faf8;color:var(--ink);overflow:hidden}
-    button,input,textarea,select{font:inherit}
-    .app{height:100dvh;display:grid;grid-template-rows:auto 1fr}
-    .topbar{min-height:64px;display:flex;align-items:center;justify-content:space-between;padding:10px 18px;background:#0f5f49;color:white;border-bottom:1px solid rgba(255,255,255,.08)}
-    .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.02em}
-    .brandmark{width:31px;height:31px;border-radius:9px;background:#fff;color:#0f5f49;display:grid;place-items:center;font-weight:900}
-    .status{display:flex;align-items:center;gap:8px;font-size:11px;color:#d9efe7}
-    .dot{width:7px;height:7px;border-radius:50%;background:#63d8ac;box-shadow:0 0 0 4px rgba(99,216,172,.12)}
-    .workspace{min-height:0;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(420px,.95fr)}
-    .chatpane,.outputpane{min-width:0;min-height:0;background:#fff}
-    .chatpane{display:grid;grid-template-rows:auto 1fr auto;border-right:1px solid var(--line)}
-    .panehead{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line);background:#fbfdfc}
-    .panehead h1,.panehead h2{margin:0;font-size:13px;letter-spacing:-.02em}
-    .panehead p{margin:2px 0 0;color:var(--muted);font-size:10px}
-    .chip{border:1px solid #d7e6df;background:#fff;color:#4e6b60;border-radius:999px;padding:6px 9px;font-size:10px;font-weight:700}
-    .chip.active{background:#eaf6f0;color:#0f6d51;border-color:#b8d9ca}
-    .messages{overflow:auto;padding:18px;display:flex;flex-direction:column;gap:14px;background:linear-gradient(180deg,#fff,#fbfdfc)}
-    .empty{margin:auto;max-width:500px;text-align:center;color:#6d7c74}
-    .empty .orb{width:58px;height:58px;margin:0 auto 14px;border-radius:18px;background:linear-gradient(145deg,#0f5f49,#2da87f);box-shadow:0 18px 36px rgba(18,112,82,.20);display:grid;place-items:center;color:#fff;font-size:25px}
-    .empty h3{margin:0 0 7px;color:#1d3027;font-size:18px}
-    .empty p{font-size:12px;line-height:1.7;margin:0}
-    .msg{max-width:82%;padding:12px 14px;border-radius:14px;font-size:13px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
-    .msg.user{align-self:flex-end;background:#0f5f49;color:#fff;border-bottom-right-radius:5px}
-    .msg.assistant{align-self:flex-start;background:#f2f7f4;color:#26382f;border:1px solid #e0ebe5;border-bottom-left-radius:5px}
-    .msg.meta{align-self:flex-start;background:transparent;border:0;padding:0;color:#8a9a91;font-size:9px}
-    .composer{border-top:1px solid var(--line);padding:12px;background:#fff}
-    .composerbox{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:end;border:1px solid #d9e6e0;background:#fbfdfc;border-radius:14px;padding:8px 9px;box-shadow:0 8px 24px rgba(21,84,63,.05)}
-    .mic{width:44px;height:44px;border:0;border-radius:12px;background:#eaf6f0;color:#0f6a50;display:grid;place-items:center;cursor:pointer;transition:.2s}
-    .mic.recording{background:#d95555;color:#fff;box-shadow:0 0 0 6px rgba(217,85,85,.10)}
-    .send{width:44px;height:44px;border:0;border-radius:12px;background:#0f5f49;color:#fff;font-size:18px;cursor:pointer}
-    textarea{width:100%;min-height:44px;max-height:140px;resize:none;border:0;outline:0;background:transparent;color:#1e3027;padding:10px 4px;line-height:1.45}
-    .wave{height:32px;display:flex;align-items:center;gap:3px;padding:0 2px}
-    .wave i{width:3px;height:7px;border-radius:99px;background:#36a980;animation:wave 1s ease-in-out infinite}
-    .wave i:nth-child(2){animation-delay:.1s}.wave i:nth-child(3){animation-delay:.2s}.wave i:nth-child(4){animation-delay:.3s}.wave i:nth-child(5){animation-delay:.4s}
-    @keyframes wave{50%{height:25px}}
-    .hidden{display:none!important}
-    .outputpane{display:grid;grid-template-rows:auto auto 1fr;background:#f6f8f7}
-    .tabs{display:flex;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line);background:#fff}
-    .tab{border:0;background:transparent;color:#78877f;padding:7px 9px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer}
-    .tab.active{background:#eef6f2;color:#155e48}
-    .output{overflow:auto;padding:18px}
-    .preview{min-height:100%;border:1px solid #dfe8e3;background:#fff;border-radius:14px;box-shadow:0 14px 38px rgba(22,75,58,.06);padding:22px}
-    .preview pre{border-radius:10px!important;overflow:auto!important}
-    .preview code{font-size:12px}
-    .preview h1,.preview h2,.preview h3{color:#1d3027;letter-spacing:-.03em}
-    .preview p,.preview li{color:#53665c}
-    .preview table{width:100%;border-collapse:collapse}.preview th,.preview td{border:1px solid #dfe8e3;padding:8px;text-align:left}
-    .codeonly{display:none;white-space:pre-wrap}
-    .codeonly.active{display:block}
-    .rawempty{color:#839289;font-size:12px;text-align:center;padding:80px 10px}
-    .toast{position:fixed;right:16px;bottom:16px;z-index:50;background:#173b2f;color:#fff;padding:10px 12px;border-radius:10px;font-size:11px;box-shadow:0 14px 36px rgba(0,0,0,.18);opacity:0;transform:translateY(8px);transition:.2s;pointer-events:none}
-    .toast.show{opacity:1;transform:none}
-    .loader{position:fixed;inset:0;z-index:100;background:radial-gradient(600px 360px at 70% 20%,rgba(86,201,159,.18),transparent 65%),linear-gradient(180deg,#164c3c,#0a2d25 58%,#061713);display:grid;place-items:center;transition:.5s}
-    .loader.hide{opacity:0;visibility:hidden}
-    .loadwrap{text-align:center;color:#fff;max-width:420px;padding:24px}
-    .loadmark{display:flex;align-items:center;justify-content:center;gap:10px;font-weight:800}.loadmark b{width:34px;height:34px;border-radius:10px;background:#fff;color:#0f5f49;display:grid;place-items:center}
-    .loadcopy{margin-top:15px;font-size:11px;color:#cbe4da}
-    .loadbar{margin:12px auto 0;width:260px;height:4px;background:rgba(255,255,255,.12);border-radius:99px;overflow:hidden}.loadbar i{display:block;height:100%;width:0;background:#64d4aa;transition:width .25s}
-    .modelnote{margin-top:8px;color:#8eb3a5;font-size:9px}
-    @media(max-width:980px){body{overflow:auto}.app{height:auto;min-height:100dvh}.workspace{grid-template-columns:1fr}.chatpane{min-height:70dvh;border-right:0;border-bottom:1px solid var(--line)}.outputpane{min-height:70dvh}.messages{min-height:52dvh}}
-    @media(max-width:560px){.topbar{padding:9px 12px}.status span:last-child{display:none}.panehead{align-items:flex-start;flex-direction:column}.msg{max-width:92%}.output{padding:10px}.preview{padding:14px}}
-    @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
-  </style>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-css.min.js"></script>
 </head>
 <body>
-<div class="loader" id="loader">
-  <div class="loadwrap">
-    <div class="loadmark"><b>P</b><span>PLQNX CORE</span></div>
-    <div class="loadcopy" id="loadCopy">Preparing free local AI…</div>
-    <div class="loadbar"><i id="loadBar"></i></div>
-    <div class="modelnote">First launch downloads the AI model to your browser cache. No paid API key is used.</div>
+  <div class="loader" id="loader">
+    <div class="loadwrap">
+      <div class="loadbrand"><b>P</b><span>PLQNX CORE</span></div>
+      <div class="loadcopy" id="loadCopy">Detecting your device…</div>
+      <div class="loadbar"><i id="loadBar"></i></div>
+      <div class="loadnote" id="loadNote">The first run downloads the selected model once, then your browser caches it.</div>
+    </div>
   </div>
-</div>
 
-<div class="app">
-  <header class="topbar">
-    <div class="brand"><span class="brandmark">P</span><span>PLQNX CORE</span></div>
-    <div class="status"><span class="dot"></span><span id="providerStatus">Starting local AI…</span></div>
-  </header>
+  <div class="dropmask" id="dropMask">
+    <div class="dropbox">
+      <b>Drop files into PLQNX</b>
+      <span>Images, PDFs, text, Markdown, code, CSV and JSON</span>
+    </div>
+  </div>
 
-  <main class="workspace">
-    <section class="chatpane">
-      <div class="panehead">
-        <div><h1>Free multimodal AI workspace</h1><p>Text, voice and code run without a paid AI API account.</p></div>
-        <span class="chip active">Free · on-device</span>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brandmark">P</span>
+        <span>PLQNX CORE<small>Multimodal local AI</small></span>
       </div>
-
-      <div class="messages" id="messages">
-        <div class="empty" id="emptyState">
-          <div class="orb">✦</div>
-          <h3>Ask, speak, build.</h3>
-          <p>PLQNX runs an open-source Qwen model directly in your browser through WebGPU. Your prompts do not need a paid model API.</p>
-        </div>
+      <div class="topactions">
+        <select id="modelSelect" class="model-select" aria-label="Text model">
+          <option value="auto">Auto model</option>
+          <option value="lite">Lite · 0.5B</option>
+          <option value="balanced">Balanced · 1.5B</option>
+          <option value="pro">Pro · 3B</option>
+        </select>
+        <div class="status"><span class="dot busy" id="statusDot"></span><span id="statusText">Starting…</span></div>
       </div>
+    </header>
 
-      <div class="composer">
-        <div class="composerbox">
-          <button class="mic" id="micBtn" aria-label="Toggle microphone">🎙</button>
+    <main class="workspace">
+      <section class="chatpane">
+        <div class="panehead">
           <div>
-            <div class="wave hidden" id="wave"><i></i><i></i><i></i><i></i><i></i></div>
-            <textarea id="prompt" rows="1" placeholder="Message PLQNX…"></textarea>
+            <h1>Multimodal workspace</h1>
+            <p>Chat, voice, images, documents and code — processed on-device where possible.</p>
           </div>
-          <button class="send" id="sendBtn" aria-label="Send">↑</button>
+          <div class="capabilities">
+            <span class="pill"><strong>●</strong> Text</span>
+            <span class="pill"><strong>●</strong> Vision</span>
+            <span class="pill"><strong>●</strong> Voice</span>
+            <span class="pill"><strong>●</strong> Files</span>
+          </div>
         </div>
-      </div>
-    </section>
 
-    <section class="outputpane">
-      <div class="panehead">
-        <div><h2>Output canvas</h2><p>Rendered markdown and syntax-highlighted code update while the local model streams.</p></div>
-        <button class="chip" id="clearBtn">Clear</button>
-      </div>
-      <div class="tabs">
-        <button class="tab active" data-tab="preview">Preview</button>
-        <button class="tab" data-tab="code">Code</button>
-      </div>
-      <div class="output">
-        <div class="preview" id="preview"><div class="rawempty">Structured output will appear here.</div></div>
-        <pre class="codeonly" id="codeOnly"></pre>
-      </div>
-    </section>
-  </main>
-</div>
+        <div class="messages" id="messages">
+          <div class="empty" id="emptyState">
+            <div class="hero-orb">✦</div>
+            <h3>One workspace.<br>Every kind of input.</h3>
+            <p>Ask a question, speak naturally, drop in a screenshot, analyze a document, generate code, or render an HTML prototype. PLQNX adapts the local model to your device.</p>
+            <div class="featuregrid">
+              <div class="feature"><b>Ask anything</b><span>Streaming multilingual text and coding answers.</span></div>
+              <div class="feature"><b>Show an image</b><span>Caption and inspect images before reasoning over them.</span></div>
+              <div class="feature"><b>Speak</b><span>Local Whisper transcription with spoken replies.</span></div>
+              <div class="feature"><b>Build</b><span>Markdown, code extraction and sandboxed HTML rendering.</span></div>
+            </div>
+          </div>
+        </div>
 
-<div class="toast" id="toast"></div>
+        <div class="composer">
+          <div class="attachments hidden" id="attachments"></div>
+          <div class="composerbox">
+            <input id="fileInput" class="hidden" type="file" multiple accept="image/*,.pdf,.txt,.md,.json,.csv,.js,.ts,.tsx,.jsx,.py,.html,.css,.yaml,.yml,.xml">
+            <button class="iconbtn" id="attachBtn" aria-label="Attach files" title="Attach images or documents">＋</button>
+            <button class="iconbtn" id="micBtn" aria-label="Record voice" title="Voice input">🎙</button>
+            <div>
+              <div class="wave hidden" id="wave"><i></i><i></i><i></i><i></i><i></i></div>
+              <textarea id="prompt" rows="1" placeholder="Ask PLQNX anything…"></textarea>
+            </div>
+            <button class="sendbtn" id="sendBtn" aria-label="Send">↑</button>
+          </div>
+          <div class="composerfoot">
+            <span id="modelFoot">Preparing local model…</span>
+            <label class="toggle"><input id="voiceReply" type="checkbox"> Speak replies</label>
+          </div>
+        </div>
+      </section>
 
-<script type="module">
-import * as webllm from "https://esm.run/@mlc-ai/web-llm";
+      <section class="canvaspane">
+        <div class="panehead">
+          <div>
+            <h2>Output canvas</h2>
+            <p>Read, inspect code, run HTML and review attachment context.</p>
+          </div>
+          <span class="pill" id="privacyPill">Private by default</span>
+        </div>
 
-const MODEL = "Qwen2.5-0.5B-Instruct-q4f16_1-MLC";
-const SYSTEM = "You are PLQNX CORE, a useful multilingual AI assistant. Respond in the user's language when clear. Support English and Indian languages. For code, give complete runnable examples when practical. Be concise, accurate and explicit about uncertainty.";
+        <div class="tabs">
+          <button class="tab active" data-tab="preview">Preview</button>
+          <button class="tab" data-tab="code">Code</button>
+          <button class="tab" data-tab="run">Run HTML</button>
+          <button class="tab" data-tab="context">Context</button>
+        </div>
 
-const els = {
-  loader: document.getElementById("loader"),
-  loadCopy: document.getElementById("loadCopy"),
-  loadBar: document.getElementById("loadBar"),
-  messages: document.getElementById("messages"),
-  prompt: document.getElementById("prompt"),
-  send: document.getElementById("sendBtn"),
-  mic: document.getElementById("micBtn"),
-  wave: document.getElementById("wave"),
-  preview: document.getElementById("preview"),
-  codeOnly: document.getElementById("codeOnly"),
-  clear: document.getElementById("clearBtn"),
-  status: document.getElementById("providerStatus"),
-  toast: document.getElementById("toast"),
-};
+        <div class="canvasbody">
+          <article class="previewcard" id="preview"><div class="rawempty">PLQNX output will appear here.</div></article>
+          <pre class="codeview" id="codeView"></pre>
+          <div class="runview" id="runView">
+            <iframe class="runframe" id="runFrame" title="Sandboxed HTML output" sandbox="allow-scripts"></iframe>
+          </div>
+          <div class="contextview" id="contextView"><div class="rawempty">Image analysis and extracted document text will appear here.</div></div>
+        </div>
+      </section>
+    </main>
+  </div>
 
-let engine = null;
-let busy = false;
-let history = JSON.parse(localStorage.getItem("plqnxHistoryFree") || "[]");
-let recognition = null;
-
-function toast(message){
-  els.toast.textContent=message;
-  els.toast.classList.add("show");
-  clearTimeout(window.__toast);
-  window.__toast=setTimeout(()=>els.toast.classList.remove("show"),2600);
-}
-
-function addMessage(role,text,meta=""){
-  document.getElementById("emptyState")?.remove();
-  const bubble=document.createElement("div");
-  bubble.className="msg "+role;
-  bubble.textContent=text;
-  els.messages.appendChild(bubble);
-  if(meta){
-    const m=document.createElement("div");
-    m.className="msg meta";
-    m.textContent=meta;
-    els.messages.appendChild(m);
-  }
-  els.messages.scrollTop=els.messages.scrollHeight;
-  return bubble;
-}
-
-function saveHistory(){
-  localStorage.setItem("plqnxHistoryFree",JSON.stringify(history.slice(-30)));
-}
-
-function renderOutput(markdown){
-  const html=DOMPurify.sanitize(marked.parse(markdown||""));
-  els.preview.innerHTML=html||'<div class="rawempty">Structured output will appear here.</div>';
-  els.preview.querySelectorAll("pre code").forEach(block=>Prism.highlightElement(block));
-
-  const codeBlocks=[...(markdown||"").matchAll(/```([\w+-]*)\n([\s\S]*?)```/g)];
-  els.codeOnly.textContent=codeBlocks.length
-    ? codeBlocks.map((m,i)=>(codeBlocks.length>1?"// Block "+(i+1)+" · "+(m[1]||"text")+"\n":"")+m[2].trim()).join("\n\n")
-    : markdown||"";
-}
-
-function speak(text){
-  if(!("speechSynthesis" in window)) return;
-  speechSynthesis.cancel();
-  const clean=text.replace(/[`*_#>-]/g," ").slice(0,3000);
-  const utterance=new SpeechSynthesisUtterance(clean);
-  utterance.rate=1;
-  speechSynthesis.speak(utterance);
-}
-
-async function initAI(){
-  if(!("gpu" in navigator)){
-    els.loadCopy.textContent="WebGPU is not available in this browser.";
-    els.status.textContent="WebGPU required";
-    toast("Use a recent Chrome or Edge browser with WebGPU enabled.");
-    setTimeout(()=>els.loader.classList.add("hide"),1000);
-    return;
-  }
-
-  try{
-    engine=await webllm.CreateMLCEngine(MODEL,{
-      initProgressCallback:(report)=>{
-        const text=report.text||"Loading local AI model…";
-        els.loadCopy.textContent=text;
-        const progress=Math.max(0,Math.min(1,report.progress||0));
-        els.loadBar.style.width=(progress*100).toFixed(0)+"%";
-        els.status.textContent="Loading model · "+Math.round(progress*100)+"%";
-      }
-    });
-    els.loadBar.style.width="100%";
-    els.loadCopy.textContent="Local AI ready";
-    els.status.textContent="Qwen 2.5 · local · ready";
-    setTimeout(()=>els.loader.classList.add("hide"),300);
-  }catch(error){
-    console.error(error);
-    els.loadCopy.textContent="Could not load the local AI model.";
-    els.status.textContent="Model load failed";
-    toast(error?.message||"Local AI failed to start.");
-    setTimeout(()=>els.loader.classList.add("hide"),1100);
-  }
-}
-
-async function runChat(message){
-  if(!message.trim()||busy) return;
-  if(!engine){
-    toast("AI model is still loading.");
-    return;
-  }
-
-  busy=true;
-  els.send.disabled=true;
-  els.prompt.value="";
-  els.prompt.style.height="auto";
-  addMessage("user",message);
-  history.push({role:"user",content:message});
-  saveHistory();
-
-  const bubble=addMessage("assistant","");
-  let full="";
-
-  try{
-    const messages=[
-      {role:"system",content:SYSTEM},
-      ...history.slice(-14)
-    ];
-
-    const stream=await engine.chat.completions.create({
-      messages,
-      temperature:0.7,
-      max_tokens:900,
-      stream:true
-    });
-
-    for await(const chunk of stream){
-      const delta=chunk.choices?.[0]?.delta?.content||"";
-      if(delta){
-        full+=delta;
-        bubble.textContent=full;
-        renderOutput(full);
-        els.messages.scrollTop=els.messages.scrollHeight;
-      }
-    }
-
-    history.push({role:"assistant",content:full});
-    saveHistory();
-
-    const meta=document.createElement("div");
-    meta.className="msg meta";
-    meta.textContent="Qwen2.5 0.5B · WebLLM · runs in your browser";
-    els.messages.appendChild(meta);
-  }catch(error){
-    bubble.textContent="Error: "+(error?.message||String(error));
-    toast("Generation failed.");
-  }finally{
-    busy=false;
-    els.send.disabled=false;
-  }
-}
-
-function setupVoice(){
-  const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SpeechRecognition){
-    els.mic.addEventListener("click",()=>toast("Voice input needs Chrome/Edge speech recognition support."));
-    return;
-  }
-
-  recognition=new SpeechRecognition();
-  recognition.continuous=false;
-  recognition.interimResults=true;
-  recognition.lang=navigator.language||"en-IN";
-
-  recognition.onstart=()=>{
-    els.mic.classList.add("recording");
-    els.wave.classList.remove("hidden");
-    els.status.textContent="Listening…";
-  };
-
-  recognition.onresult=(event)=>{
-    let transcript="";
-    for(let i=event.resultIndex;i<event.results.length;i++){
-      transcript+=event.results[i][0].transcript;
-    }
-    els.prompt.value=transcript;
-  };
-
-  recognition.onerror=(event)=>{
-    toast("Voice input: "+event.error);
-  };
-
-  recognition.onend=()=>{
-    els.mic.classList.remove("recording");
-    els.wave.classList.add("hidden");
-    els.status.textContent=engine?"Qwen 2.5 · local · ready":"Loading model…";
-    const text=els.prompt.value.trim();
-    if(text) runChat(text).then(()=> {
-      const last=[...history].reverse().find(x=>x.role==="assistant");
-      if(last) speak(last.content);
-    });
-  };
-
-  els.mic.addEventListener("click",()=>{
-    try{ recognition.start(); }catch{}
-  });
-}
-
-document.querySelectorAll("[data-tab]").forEach(btn=>{
-  btn.addEventListener("click",()=>{
-    const isCode=btn.dataset.tab==="code";
-    document.querySelectorAll("[data-tab]").forEach(x=>x.classList.toggle("active",x===btn));
-    els.preview.style.display=isCode?"none":"block";
-    els.codeOnly.classList.toggle("active",isCode);
-  });
-});
-
-els.send.addEventListener("click",()=>runChat(els.prompt.value));
-els.prompt.addEventListener("keydown",event=>{
-  if(event.key==="Enter"&&!event.shiftKey){
-    event.preventDefault();
-    runChat(els.prompt.value);
-  }
-});
-els.prompt.addEventListener("input",()=>{
-  els.prompt.style.height="auto";
-  els.prompt.style.height=Math.min(els.prompt.scrollHeight,140)+"px";
-});
-els.clear.addEventListener("click",()=>{
-  history=[];
-  localStorage.removeItem("plqnxHistoryFree");
-  els.messages.innerHTML='<div class="empty" id="emptyState"><div class="orb">✦</div><h3>Ask, speak, build.</h3><p>Conversation cleared. The AI model remains loaded locally in your browser.</p></div>';
-  els.preview.innerHTML='<div class="rawempty">Structured output will appear here.</div>';
-  els.codeOnly.textContent="";
-});
-
-if(history.length){
-  document.getElementById("emptyState")?.remove();
-  history.forEach(item=>addMessage(item.role,item.content));
-  const last=[...history].reverse().find(item=>item.role==="assistant");
-  if(last) renderOutput(last.content);
-}
-
-setupVoice();
-initAI();
-</script>
+  <div class="toast" id="toast"></div>
+  <script type="module" src="/app.js"></script>
 </body>
 </html>
