@@ -1,16 +1,24 @@
 from pathlib import Path
 import os
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, RedirectResponse
+from pydantic import BaseModel, Field
+import httpx
 
 BASE_DIR = Path(__file__).resolve().parent
 
 app = FastAPI(
     title="PLQNX CORE",
-    version="4.2.0",
-    description="Browser-first multimodal AI workspace using WebGPU, WebLLM and Transformers.js.",
+    version="4.3.0",
+    description="Fast multimodal AI workspace with shared server inference and optional browser-local models.",
 )
+
+AI_URL = os.getenv("PLQNX_AI_URL", "http://127.0.0.1:9000")
+
+class ChatRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=24000)
+    history: list[dict] = Field(default_factory=list)
 
 def no_store_file(path: Path, media_type: str | None = None):
     response = FileResponse(path, media_type=media_type)
@@ -53,15 +61,53 @@ async def service_worker():
     response.headers["Cache-Control"] = "no-cache"
     return response
 
+@app.get("/api/ai-health")
+async def ai_health():
+    try:
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            response = await client.get(f"{AI_URL}/health")
+        data = response.json()
+        return {"ok": response.status_code == 200, **data}
+    except Exception as exc:
+        return {"ok": False, "ready": False, "error": type(exc).__name__}
+
+@app.post("/api/chat")
+async def api_chat(request: ChatRequest):
+    payload = {
+        "message": request.message,
+        "history": request.history[-10:],
+    }
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            response = await client.post(f"{AI_URL}/generate", json=payload)
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=503, detail=f"AI service connection failed: {type(exc).__name__}") from exc
+
+    if response.status_code != 200:
+        detail = "AI service is starting"
+        try:
+            body = response.json()
+            detail = body.get("detail") or body.get("error") or detail
+        except Exception:
+            pass
+        raise HTTPException(status_code=503, detail=detail)
+
+    data = response.json()
+    text = (data.get("text") or "").strip()
+    if not text:
+        raise HTTPException(status_code=502, detail="AI service returned an empty response")
+    return {"text": text, "model": data.get("model", "plqnx-server-ai")}
+
 @app.get("/health")
 async def health():
     return {
         "ok": True,
-        "version": "4.2.0",
-        "runtime": "browser-first",
+        "version": "4.3.0",
+        "runtime": "server-first-with-browser-fallback",
         "server_api_key_required": False,
+        "chat_endpoint": "/api/chat",
         "capabilities": {
-            "text": "MLC WebLLM / instant SmolLM2 360M + optional Qwen2.5 1.5B-3B",
+            "text": "Shared server SmolLM2 135M + optional local WebLLM models",
             "vision": "Transformers.js image captioning + optional OCR",
             "speech_to_text": "Transformers.js Whisper",
             "text_to_speech": "Browser speech synthesis",
