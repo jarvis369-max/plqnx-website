@@ -6,7 +6,6 @@ import tempfile
 from pathlib import Path
 from typing import AsyncIterator, Literal
 
-from anthropic import AsyncAnthropic
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,24 +18,18 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
-VAPI_API_KEY = os.getenv("VAPI_API_KEY", "")
-ROOMI_AI_KEY = os.getenv("ROOMI_AI_KEY", "")
-
-OPENAI_TEXT_MODEL = os.getenv("OPENAI_TEXT_MODEL", "gpt-4o")
-OPENAI_FAST_MODEL = os.getenv("OPENAI_FAST_MODEL", "gpt-4o-mini")
+OPENAI_TEXT_MODEL = os.getenv("OPENAI_TEXT_MODEL", "gpt-5.6-luna")
+OPENAI_VOICE_MODEL = os.getenv("OPENAI_VOICE_MODEL", "gpt-realtime-1.5")
 OPENAI_STT_MODEL = os.getenv("OPENAI_STT_MODEL", "gpt-4o-mini-transcribe")
 OPENAI_TTS_MODEL = os.getenv("OPENAI_TTS_MODEL", "gpt-4o-mini-tts")
 OPENAI_TTS_VOICE = os.getenv("OPENAI_TTS_VOICE", "alloy")
-ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-latest")
 
-openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
-anthropic_client = AsyncAnthropic(api_key=ANTHROPIC_API_KEY) if ANTHROPIC_API_KEY else None
+client = AsyncOpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
 app = FastAPI(
-    title="PLQNX Multimodal AI",
-    version="1.0.0",
-    description="Real-time multilingual multimodal AI workspace.",
+    title="PLQNX CORE",
+    version="2.0.0",
+    description="OpenAI-powered multilingual multimodal AI workspace.",
 )
 
 app.add_middleware(
@@ -47,19 +40,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-SYSTEM_PROMPT = """You are PLQNX, a multilingual multimodal AI assistant.
-Be accurate, practical, concise when possible, and explicit about uncertainty.
-Respond in the user's language when that is clear. You handle English and Indian
-regional languages including Hindi, Tamil, Telugu, Kannada, Marathi and Bengali.
-For code, produce complete runnable examples, explain important assumptions, and
-prefer secure current patterns. Never invent results from tools you did not run."""
-
-CODE_HINTS = {
-    "code", "coding", "python", "javascript", "typescript", "html", "css", "react",
-    "fastapi", "django", "flask", "sql", "database", "api", "bug", "debug", "error",
-    "stack trace", "function", "class", "algorithm", "docker", "kubernetes", "git",
-    "regex", "refactor", "compile", "terminal", "backend", "frontend", "full-stack",
-}
+SYSTEM_PROMPT = """You are PLQNX CORE, a multilingual multimodal AI assistant.
+Be accurate, useful, practical, and explicit about uncertainty.
+Respond in the user's language when clear. Support English and Indian languages
+including Hindi, Telugu, Tamil, Kannada, Marathi, Bengali, Malayalam, Gujarati,
+Punjabi and Urdu. For coding tasks, provide complete runnable code when useful,
+explain important assumptions, and prefer secure modern patterns."""
 
 
 class ChatMessage(BaseModel):
@@ -70,96 +56,65 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=50_000)
     history: list[ChatMessage] = Field(default_factory=list)
-    mode: Literal["auto", "openai", "anthropic"] = "auto"
 
 
-def choose_provider(text: str, mode: str = "auto", voice: bool = False) -> tuple[str, str]:
-    if voice:
-        return "openai", OPENAI_FAST_MODEL
-    if mode == "openai":
-        return "openai", OPENAI_TEXT_MODEL
-    if mode == "anthropic":
-        return "anthropic", ANTHROPIC_MODEL
-
-    lowered = text.lower()
-    if any(hint in lowered for hint in CODE_HINTS) and anthropic_client:
-        return "anthropic", ANTHROPIC_MODEL
-    return "openai", OPENAI_TEXT_MODEL
+def require_client() -> AsyncOpenAI:
+    if client is None:
+        raise HTTPException(
+            status_code=503,
+            detail="OPENAI_API_KEY is not configured on the server.",
+        )
+    return client
 
 
-def _openai_messages(history: list[ChatMessage], message: str) -> list[dict[str, str]]:
-    trimmed = history[-20:]
-    return [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        *[{"role": item.role, "content": item.content} for item in trimmed],
-        {"role": "user", "content": message},
+def response_input(history: list[ChatMessage], message: str) -> list[dict]:
+    items: list[dict] = [
+        {
+            "role": "system",
+            "content": [{"type": "input_text", "text": SYSTEM_PROMPT}],
+        }
     ]
-
-
-def _anthropic_messages(history: list[ChatMessage], message: str) -> list[dict[str, str]]:
-    trimmed = history[-20:]
-    return [
-        *[{"role": item.role, "content": item.content} for item in trimmed],
-        {"role": "user", "content": message},
-    ]
-
-
-async def stream_openai(history: list[ChatMessage], message: str, model: str) -> AsyncIterator[str]:
-    if not openai_client:
-        raise HTTPException(status_code=503, detail="OPENAI_API_KEY is not configured.")
-    stream = await openai_client.chat.completions.create(
-        model=model,
-        messages=_openai_messages(history, message),
-        temperature=0.4,
-        stream=True,
+    for item in history[-24:]:
+        content_type = "input_text" if item.role == "user" else "output_text"
+        items.append(
+            {
+                "role": item.role,
+                "content": [{"type": content_type, "text": item.content}],
+            }
+        )
+    items.append(
+        {
+            "role": "user",
+            "content": [{"type": "input_text", "text": message}],
+        }
     )
-    async for chunk in stream:
-        text = chunk.choices[0].delta.content or ""
-        if text:
-            yield text
+    return items
 
 
-async def stream_anthropic(history: list[ChatMessage], message: str, model: str) -> AsyncIterator[str]:
-    if not anthropic_client:
-        # Graceful fallback keeps the application working when only OpenAI is configured.
-        async for text in stream_openai(history, message, OPENAI_TEXT_MODEL):
-            yield text
-        return
-
-    async with anthropic_client.messages.stream(
-        model=model,
-        system=SYSTEM_PROMPT,
-        max_tokens=4096,
-        temperature=0.3,
-        messages=_anthropic_messages(history, message),
+async def stream_text(history: list[ChatMessage], message: str) -> AsyncIterator[str]:
+    api = require_client()
+    async with api.responses.stream(
+        model=OPENAI_TEXT_MODEL,
+        input=response_input(history, message),
     ) as stream:
-        async for text in stream.text_stream:
-            if text:
-                yield text
+        async for event in stream:
+            if event.type == "response.output_text.delta" and event.delta:
+                yield event.delta
 
 
-async def generate_text(
-    message: str,
-    history: list[ChatMessage] | None = None,
-    mode: str = "auto",
-    voice: bool = False,
-) -> tuple[str, str, str]:
-    history = history or []
-    provider, model = choose_provider(message, mode=mode, voice=voice)
+async def generate_text(message: str, history: list[ChatMessage] | None = None) -> str:
     parts: list[str] = []
-    iterator = (
-        stream_anthropic(history, message, model)
-        if provider == "anthropic"
-        else stream_openai(history, message, model)
-    )
-    async for piece in iterator:
+    async for piece in stream_text(history or [], message):
         parts.append(piece)
-    return "".join(parts), provider, model
+    return "".join(parts)
 
 
-async def transcribe_audio(audio_bytes: bytes, suffix: str = ".webm", language: str | None = None) -> str:
-    if not openai_client:
-        raise RuntimeError("OPENAI_API_KEY is required for speech recognition.")
+async def transcribe_audio(
+    audio_bytes: bytes,
+    suffix: str = ".webm",
+    language: str | None = None,
+) -> str:
+    api = require_client()
 
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as temp:
         temp.write(audio_bytes)
@@ -167,38 +122,36 @@ async def transcribe_audio(audio_bytes: bytes, suffix: str = ".webm", language: 
 
     try:
         with temp_path.open("rb") as audio_file:
-            kwargs = {
-                "model": OPENAI_STT_MODEL,
-                "file": audio_file,
-            }
+            kwargs = {"model": OPENAI_STT_MODEL, "file": audio_file}
             if language and language != "auto":
                 kwargs["language"] = language
-            result = await openai_client.audio.transcriptions.create(**kwargs)
+            result = await api.audio.transcriptions.create(**kwargs)
         return (result.text or "").strip()
     finally:
         temp_path.unlink(missing_ok=True)
 
 
 async def synthesize_speech(text: str) -> bytes:
-    if not openai_client:
-        raise RuntimeError("OPENAI_API_KEY is required for speech synthesis.")
-
-    response = await openai_client.audio.speech.create(
+    api = require_client()
+    response = await api.audio.speech.create(
         model=OPENAI_TTS_MODEL,
         voice=OPENAI_TTS_VOICE,
         input=text[:4096],
         response_format="mp3",
     )
+
     content = getattr(response, "content", None)
     if isinstance(content, (bytes, bytearray)):
         return bytes(content)
+
     read_method = getattr(response, "read", None)
     if read_method:
         data = read_method()
         if asyncio.iscoroutine(data):
             data = await data
         return bytes(data)
-    raise RuntimeError("The speech provider returned an unsupported response type.")
+
+    raise RuntimeError("OpenAI speech synthesis returned an unsupported response.")
 
 
 def ndjson(payload: dict) -> bytes:
@@ -219,52 +172,38 @@ async def legacy_core():
 async def health():
     return {
         "ok": True,
-        "openai": bool(OPENAI_API_KEY),
-        "anthropic": bool(ANTHROPIC_API_KEY),
-        "vapi": bool(VAPI_API_KEY),
-        "roomi": bool(ROOMI_AI_KEY),
+        "openai_configured": bool(OPENAI_API_KEY),
+        "text_model": OPENAI_TEXT_MODEL,
+        "voice_model": OPENAI_VOICE_MODEL,
+        "stt_model": OPENAI_STT_MODEL,
+        "tts_model": OPENAI_TTS_MODEL,
     }
 
 
 @app.get("/api/providers")
 async def providers():
     return {
-        "text": {
-            "openai": {"configured": bool(OPENAI_API_KEY), "model": OPENAI_TEXT_MODEL},
-            "anthropic": {"configured": bool(ANTHROPIC_API_KEY), "model": ANTHROPIC_MODEL},
-        },
-        "voice": {
-            "openai": {
-                "configured": bool(OPENAI_API_KEY),
-                "chat_model": OPENAI_FAST_MODEL,
-                "stt_model": OPENAI_STT_MODEL,
-                "tts_model": OPENAI_TTS_MODEL,
-            },
-            "vapi": {
-                "configured": bool(VAPI_API_KEY),
-                "role": "optional orchestration credential available to server-side adapters",
-            },
-            "roomi": {
-                "configured": bool(ROOMI_AI_KEY),
-                "role": "optional regional-voice credential available to server-side adapters",
-            },
-        },
+        "provider": "OpenAI",
+        "configured": bool(OPENAI_API_KEY),
+        "text_model": OPENAI_TEXT_MODEL,
+        "voice_model": OPENAI_VOICE_MODEL,
+        "stt_model": OPENAI_STT_MODEL,
+        "tts_model": OPENAI_TTS_MODEL,
     }
 
 
 @app.post("/api/chat")
 async def chat(request: ChatRequest):
-    provider, model = choose_provider(request.message, request.mode)
-
     async def event_stream():
-        yield ndjson({"type": "meta", "provider": provider, "model": model})
+        yield ndjson(
+            {
+                "type": "meta",
+                "provider": "OpenAI",
+                "model": OPENAI_TEXT_MODEL,
+            }
+        )
         try:
-            iterator = (
-                stream_anthropic(request.history, request.message, model)
-                if provider == "anthropic"
-                else stream_openai(request.history, request.message, model)
-            )
-            async for text in iterator:
+            async for text in stream_text(request.history, request.message):
                 yield ndjson({"type": "delta", "text": text})
             yield ndjson({"type": "done"})
         except Exception as exc:
@@ -281,22 +220,20 @@ async def audio_socket(websocket: WebSocket):
     mode = "voice"
 
     try:
-        await websocket.send_json({"type": "ready"})
+        await websocket.send_json({"type": "ready", "provider": "OpenAI"})
+
         while True:
             message = await websocket.receive()
 
             if message.get("bytes") is not None:
                 chunks.append(message["bytes"])
-                await websocket.send_json(
-                    {"type": "audio_ack", "bytes_received": sum(len(c) for c in chunks)}
-                )
                 continue
 
-            text_data = message.get("text")
-            if not text_data:
+            raw_text = message.get("text")
+            if not raw_text:
                 continue
 
-            event = json.loads(text_data)
+            event = json.loads(raw_text)
             event_type = event.get("type")
 
             if event_type == "start":
@@ -312,34 +249,49 @@ async def audio_socket(websocket: WebSocket):
                 continue
 
             if event_type != "stop":
-                await websocket.send_json({"type": "warning", "message": "Unknown event type."})
+                await websocket.send_json(
+                    {"type": "warning", "message": "Unknown voice event."}
+                )
                 continue
 
             if not chunks:
-                await websocket.send_json({"type": "error", "message": "No audio was received."})
+                await websocket.send_json(
+                    {"type": "error", "message": "No audio was received."}
+                )
                 continue
 
-            await websocket.send_json({"type": "processing", "stage": "transcription"})
+            await websocket.send_json(
+                {"type": "processing", "stage": "transcription"}
+            )
+
             audio_blob = b"".join(chunks)
             chunks.clear()
 
             transcript = await transcribe_audio(audio_blob, ".webm", language)
             if not transcript:
                 await websocket.send_json(
-                    {"type": "error", "message": "I could not detect speech in that recording."}
+                    {
+                        "type": "error",
+                        "message": "No speech could be detected in that recording.",
+                    }
                 )
                 continue
 
-            await websocket.send_json({"type": "transcript", "text": transcript})
-            await websocket.send_json({"type": "processing", "stage": "reasoning"})
+            await websocket.send_json(
+                {"type": "transcript", "text": transcript}
+            )
+            await websocket.send_json(
+                {"type": "processing", "stage": "reasoning"}
+            )
 
-            reply, provider, model = await generate_text(transcript, voice=True)
+            reply = await generate_text(transcript)
+
             await websocket.send_json(
                 {
                     "type": "assistant_text",
                     "text": reply,
-                    "provider": provider,
-                    "model": model,
+                    "provider": "OpenAI",
+                    "model": OPENAI_TEXT_MODEL,
                 }
             )
 
@@ -347,7 +299,10 @@ async def audio_socket(websocket: WebSocket):
                 await websocket.send_json({"type": "done"})
                 continue
 
-            await websocket.send_json({"type": "processing", "stage": "speech"})
+            await websocket.send_json(
+                {"type": "processing", "stage": "speech"}
+            )
+
             audio = await synthesize_speech(reply)
             await websocket.send_json(
                 {
@@ -365,7 +320,10 @@ async def audio_socket(websocket: WebSocket):
             await websocket.send_json({"type": "error", "message": str(exc)})
         except Exception:
             pass
-        await websocket.close(code=1011)
+        try:
+            await websocket.close(code=1011)
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":
