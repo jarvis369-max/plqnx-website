@@ -34,14 +34,14 @@
     <header class="topbar">
       <div class="brand">
         <span class="brandmark">P</span>
-        <span>PLQNX CORE<small>Multimodal local AI</small></span>
+        <span>PLQNX CORE<small>Fast multimodal AI</small></span>
       </div>
       <div class="topactions">
         <select id="modelSelect" class="model-select" aria-label="Text model">
-          <option value="auto">Instant start</option>
-          <option value="lite">Instant · 360M</option>
-          <option value="balanced">Balanced · 1.5B</option>
-          <option value="pro">Pro · 3B</option>
+          <option value="cloud" selected>PLQNX Fast · no download</option>
+          <option value="lite">Local · 360M</option>
+          <option value="balanced">Local · 1.5B</option>
+          <option value="pro">Local · 3B</option>
         </select>
         <div class="status"><span class="dot busy" id="statusDot"></span><span id="statusText">Starting…</span></div>
       </div>
@@ -52,7 +52,7 @@
         <div class="panehead">
           <div>
             <h1>Multimodal workspace</h1>
-            <p>Chat, voice, images, documents and code — processed on-device where possible.</p>
+            <p>Chat instantly with shared AI; vision, voice and files can still use private on-device tools.</p>
           </div>
           <div class="capabilities">
             <span class="pill"><strong>●</strong> Text</span>
@@ -89,7 +89,7 @@
             <button class="sendbtn" id="sendBtn" aria-label="Send">↑</button>
           </div>
           <div class="composerfoot">
-            <span id="modelFoot">Instant model warming in background…</span>
+            <span id="modelFoot">Shared AI · no model download</span>
             <label class="toggle"><input id="voiceReply" type="checkbox"> Speak replies</label>
           </div>
         </div>
