@@ -8,14 +8,14 @@ from peft import LoraConfig
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 from trl import SFTConfig, SFTTrainer
 
-DEFAULT_MODEL = "Qwen/Qwen3-4B-Instruct-2507"
+DEFAULT_MODEL = "dheeyantra/dhee-nxtgen-qwen3-indic"
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="QLoRA fine-tuning for PLQNX CORE")
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--train-file", default="training/data/plqnx_train.jsonl")
-    parser.add_argument("--output-dir", default="artifacts/plqnx-qwen3-4b-lora")
+    parser.add_argument("--output-dir", default="artifacts/plqnx-indic-4b-lora")
     parser.add_argument("--epochs", type=float, default=2.0)
     parser.add_argument("--learning-rate", type=float, default=1e-4)
     parser.add_argument("--max-length", type=int, default=2048)
