@@ -8,13 +8,24 @@ BASE_DIR = Path(__file__).resolve().parent
 
 app = FastAPI(
     title="PLQNX CORE",
-    version="4.0.0",
+    version="4.2.0",
     description="Browser-first multimodal AI workspace using WebGPU, WebLLM and Transformers.js.",
 )
 
+def no_store_file(path: Path, media_type: str | None = None):
+    response = FileResponse(path, media_type=media_type)
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
 @app.get("/")
 async def home():
-    return FileResponse(BASE_DIR / "index.html")
+    return no_store_file(BASE_DIR / "index.html")
+
+@app.get("/index.html")
+async def index_html():
+    return no_store_file(BASE_DIR / "index.html")
 
 @app.get("/core.html")
 async def legacy_core():
@@ -22,15 +33,15 @@ async def legacy_core():
 
 @app.get("/site.css")
 async def site_css():
-    return FileResponse(BASE_DIR / "site.css", media_type="text/css")
+    return no_store_file(BASE_DIR / "site.css", media_type="text/css")
 
 @app.get("/app.js")
 async def app_js():
-    return FileResponse(BASE_DIR / "app.js", media_type="text/javascript")
+    return no_store_file(BASE_DIR / "app.js", media_type="text/javascript")
 
 @app.get("/manifest.webmanifest")
 async def manifest():
-    return FileResponse(
+    return no_store_file(
         BASE_DIR / "manifest.webmanifest",
         media_type="application/manifest+json",
     )
@@ -46,7 +57,7 @@ async def service_worker():
 async def health():
     return {
         "ok": True,
-        "version": "4.1.0",
+        "version": "4.2.0",
         "runtime": "browser-first",
         "server_api_key_required": False,
         "capabilities": {
