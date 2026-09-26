@@ -1,35 +1,25 @@
-const CACHE = "plqnx-core-v5";
-const SHELL = ["/", "/index.html", "/site.css", "/app.js", "/manifest.webmanifest"];
-
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(SHELL)).catch(() => {})
-  );
-  self.skipWaiting();
-});
+self.addEventListener("install", () => self.skipWaiting());
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key)))
-    )
-  );
-  self.clients.claim();
-});
+  event.waitUntil((async () => {
+    try {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((key) => caches.delete(key)));
+    } catch {}
 
-self.addEventListener("fetch", (event) => {
-  const url = new URL(event.request.url);
-  if (url.origin !== self.location.origin || event.request.method !== "GET") return;
+    try {
+      await self.registration.unregister();
+    } catch {}
 
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        if (response.ok) {
-          const copy = response.clone();
-          caches.open(CACHE).then((cache) => cache.put(event.request, copy));
+    const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    for (const client of windows) {
+      try {
+        const url = new URL(client.url);
+        if (!url.searchParams.has("_fresh")) {
+          url.searchParams.set("_fresh", "6");
+          await client.navigate(url.href);
         }
-        return response;
-      })
-      .catch(() => caches.match(event.request))
-  );
+      } catch {}
+    }
+  })());
 });
