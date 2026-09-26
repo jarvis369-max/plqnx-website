@@ -1,132 +1,64 @@
-# PLQNX CORE — Real-time Multimodal AI
+# PLQNX CORE — OpenAI Multimodal AI
 
-PLQNX CORE is now a focused full-stack multimodal AI web application. The previous receivables product pages and unrelated concepts are removed from the active product direction.
+PLQNX CORE is a focused full-stack multimodal AI web application powered only by OpenAI.
 
-## What this project does
+## Capabilities
 
-- Text-to-text AI chat with streaming responses
-- Voice-to-text through the browser microphone
-- Voice-to-voice over a WebSocket turn pipeline
-- Text-to-voice using OpenAI speech synthesis
-- Dynamic provider routing:
-  - technical and coding prompts → Anthropic Claude when configured
-  - general writing, analysis and content → OpenAI
-  - voice interactions → low-latency OpenAI model
-- Multilingual text support, including English, Hindi, Tamil, Telugu, Kannada, Marathi and Bengali
-- Split-screen workspace:
-  - left: chat, history, microphone, live status
-  - right: rendered Markdown and syntax-highlighted code
-- Replit-ready FastAPI backend
+- Streaming text-to-text responses
+- Voice-to-text from the browser microphone
+- Voice-to-voice turn pipeline over WebSockets
+- Text-to-voice playback
+- Multilingual support for English and Indian languages
+- Split-screen chat + output/code canvas
+- Markdown rendering and syntax highlighting
+- Local browser conversation history
+- One AI provider only: OpenAI
 
-## Project structure
+## Required secret
 
-```text
-.
-├── main.py
-├── index.html
-├── requirements.txt
-├── .replit
-└── README.md
-```
-
-## Replit setup
-
-1. Import this GitHub repository into Replit.
-2. Open **Tools → Secrets**.
-3. Add the provider keys you intend to use:
+The backend requires an OpenAI API key supplied securely by the deployment environment:
 
 ```text
 OPENAI_API_KEY=...
-ANTHROPIC_API_KEY=...
-VAPI_API_KEY=...
-ROOMI_AI_KEY=...
 ```
 
-Only `OPENAI_API_KEY` is required for the complete text + voice experience. Anthropic is optional; when absent, coding requests fall back to OpenAI.
+Do not put the key inside `index.html`, commit it to GitHub, or expose it to browser JavaScript.
 
-The application reads secrets from environment variables. Do not hard-code keys into source files.
-
-### Optional model overrides
-
-You can also add:
+## Optional model settings
 
 ```text
-OPENAI_TEXT_MODEL=gpt-4o
-OPENAI_FAST_MODEL=gpt-4o-mini
+OPENAI_TEXT_MODEL=gpt-5.6-luna
+OPENAI_VOICE_MODEL=gpt-realtime-1.5
 OPENAI_STT_MODEL=gpt-4o-mini-transcribe
 OPENAI_TTS_MODEL=gpt-4o-mini-tts
 OPENAI_TTS_VOICE=alloy
-ANTHROPIC_MODEL=claude-3-5-sonnet-latest
 PORT=3000
 ```
 
-If a provider deprecates a model alias, update the corresponding environment variable without changing application code.
+OpenAI's current model catalog includes GPT-5.6 models for general work, GPT-Realtime models for voice, GPT-4o Mini TTS for speech synthesis, and GPT-4o Mini Transcribe for transcription.
 
-## Install and run
-
-Replit normally installs from `requirements.txt` automatically. To run manually:
+## Run
 
 ```bash
 pip install -r requirements.txt
 uvicorn main:app --host 0.0.0.0 --port 3000
 ```
 
-Open the Replit web preview. The same origin serves both the frontend and backend.
+## Routes
 
-## API routes
+- `GET /` — application
+- `GET /health` — configuration health
+- `GET /api/providers` — current OpenAI model configuration
+- `POST /api/chat` — streaming OpenAI response
+- `WS /ws/audio` — microphone audio → transcription → AI response → speech audio
 
-- `GET /` — application UI
-- `GET /health` — provider/configuration health
-- `GET /api/providers` — configured model/provider information
-- `POST /api/chat` — NDJSON streaming text responses
-- `WS /ws/audio` — streamed microphone chunks → transcription → AI response → speech audio
+## Security
 
-## Voice WebSocket protocol
+- API keys remain server-side.
+- The browser never receives the key.
+- Markdown is sanitized before rendering.
+- Before a public production launch, add authentication, rate limiting, persistent storage, abuse controls, monitoring and request quotas.
 
-Client → server:
+## Hosting
 
-```json
-{"type":"start","language":"auto","mode":"voice"}
-```
-
-Then send browser `MediaRecorder` WebM chunks as binary frames.
-
-Finish the turn with:
-
-```json
-{"type":"stop"}
-```
-
-Server events include:
-
-- `ready`
-- `recording`
-- `audio_ack`
-- `processing`
-- `transcript`
-- `assistant_text`
-- `assistant_audio`
-- `done`
-- `error`
-
-## Vapi and Roomi
-
-`VAPI_API_KEY` and `ROOMI_AI_KEY` are loaded securely and reported through `/api/providers`. The working in-app voice path uses OpenAI STT + low-latency chat + TTS. This avoids inventing undocumented third-party endpoints. If you standardize on Vapi/Retell or a specific Roomi API contract, add its adapter behind the same WebSocket protocol.
-
-## Security notes
-
-- Keep all provider credentials in Replit Secrets.
-- The browser never receives API keys.
-- Markdown output is sanitized with DOMPurify before rendering.
-- The current app does not include user authentication or account isolation. Add authenticated sessions, rate limiting, persistent conversation storage, observability and abuse controls before opening a public production deployment.
-- Browser chat history is stored locally in `localStorage`.
-
-## Deployment
-
-For a Replit Deployment, keep the deployment command:
-
-```bash
-uvicorn main:app --host 0.0.0.0 --port 3000
-```
-
-The previous GitHub Pages-only static deployment cannot run the FastAPI backend. Use Replit Deployment for the real multimodal application.
+This app requires a Python/ASGI backend. GitHub Pages alone can only serve the static frontend and cannot run `main.py`. Deploy the repository to any host that supports Python/FastAPI and set `OPENAI_API_KEY` there as a secret.
