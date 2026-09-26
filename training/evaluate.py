@@ -6,7 +6,7 @@ import torch
 from peft import PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-DEFAULT_MODEL = "Qwen/Qwen3-4B-Instruct-2507"
+DEFAULT_MODEL = "dheeyantra/dhee-nxtgen-qwen3-indic"
 
 PROMPTS = [
     "Explain a Python FastAPI WebSocket bug where a client disconnect is not handled.",
