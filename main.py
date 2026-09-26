@@ -10,7 +10,7 @@ BASE_DIR = Path(__file__).resolve().parent
 
 app = FastAPI(
     title="PLQNX CORE",
-    version="4.3.0",
+    version="4.4.0",
     description="Fast multimodal AI workspace with shared server inference and optional browser-local models.",
 )
 
@@ -100,14 +100,31 @@ async def api_chat(request: ChatRequest):
 
 @app.get("/health")
 async def health():
+    ai_ready = False
+    ai_model = None
+    try:
+        async with httpx.AsyncClient(timeout=2.0) as client:
+            response = await client.get(f"{AI_URL}/health")
+        if response.status_code == 200:
+            data = response.json()
+            ai_ready = bool(data.get("ready"))
+            ai_model = data.get("model")
+    except Exception:
+        ai_ready = False
+
+    if not ai_ready:
+        raise HTTPException(status_code=503, detail="PLQNX AI is starting")
+
     return {
         "ok": True,
-        "version": "4.3.0",
+        "version": "4.4.0",
         "runtime": "server-first-with-browser-fallback",
         "server_api_key_required": False,
         "chat_endpoint": "/api/chat",
+        "ai_ready": True,
+        "ai_model": ai_model,
         "capabilities": {
-            "text": "Shared server SmolLM2 135M + optional local WebLLM models",
+            "text": "Preloaded shared SmolLM2 135M + optional local WebLLM models",
             "vision": "Transformers.js image captioning + optional OCR",
             "speech_to_text": "Transformers.js Whisper",
             "text_to_speech": "Browser speech synthesis",
