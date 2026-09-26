@@ -53,3 +53,26 @@ Production deployment direction:
 - keep the current browser WebLLM mode as an offline fallback
 
 Do not expose a runtime LoRA-loading endpoint publicly. Load only the approved PLQNX adapter at service startup.
+
+
+## Online training
+
+A ready-to-run notebook is included at:
+
+training/PLQNX_Finetune_Colab.ipynb
+
+Open it in Google Colab, select a GPU runtime, and run the cells from top to bottom. It clones this repository, installs the training stack, runs a smoke-test QLoRA pass, evaluates the adapter, and can upload the resulting LoRA adapter to a private Hugging Face model repository after Hugging Face login.
+
+Hugging Face Jobs are another production-grade option, but Jobs require a positive compute-credit balance. Hugging Face ZeroGPU can provide limited free GPU time for eligible Spaces, but its quota is designed for short workloads and is not a dependable production training backend.
+
+## Current status
+
+The repository now contains:
+- the QLoRA training script
+- training dependencies
+- a multilingual PLQNX seed dataset
+- a held-out-style evaluation script
+- an online Colab GPU notebook
+- optional private Hugging Face adapter upload support
+
+The next quality milestone is dataset expansion. The current seed dataset validates the pipeline; it is intentionally too small to justify deploying the resulting adapter as a production model.
