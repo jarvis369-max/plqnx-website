@@ -93,9 +93,7 @@
       <div class="panehead">
         <div><h1>Multimodal AI workspace</h1><p>Text, voice, code and multilingual interaction in one interface.</p></div>
         <div class="modebar">
-          <button class="chip active" data-mode="auto">Auto route</button>
-          <button class="chip" data-mode="openai">OpenAI</button>
-          <button class="chip" data-mode="anthropic">Claude</button>
+          <span class="chip active">OpenAI only</span>
         </div>
       </div>
 
@@ -103,7 +101,7 @@
         <div class="empty" id="emptyState">
           <div class="orb">✦</div>
           <h3>Ask, speak, build.</h3>
-          <p>Use text or the microphone. Coding requests route to Claude when configured; general work routes to OpenAI. Voice uses the low-latency voice pipeline.</p>
+          <p>Use text or the microphone. PLQNX uses OpenAI for reasoning, coding, multilingual text, transcription and speech.</p>
         </div>
       </div>
 
@@ -156,7 +154,6 @@
     toast: document.getElementById("toast"),
   };
 
-  let routeMode = "auto";
   let history = JSON.parse(localStorage.getItem("plqnxHistory") || "[]");
   let latestAssistant = "";
   let mediaRecorder = null;
@@ -222,8 +219,7 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message,
-          history: history.slice(0, -1),
-          mode: routeMode
+          history: history.slice(0, -1)
         })
       });
 
@@ -368,21 +364,11 @@
   async function refreshProviders() {
     try {
       const data = await fetch("/api/providers").then(r => r.json());
-      const names = [];
-      if (data.text.openai.configured) names.push("OpenAI");
-      if (data.text.anthropic.configured) names.push("Claude");
-      els.status.textContent = names.length ? names.join(" + ") + " ready" : "Add API keys in Replit Secrets";
+      els.status.textContent = data.configured ? "OpenAI ready · " + data.text_model : "OPENAI_API_KEY required";
     } catch {
       els.status.textContent = "Backend status unavailable";
     }
   }
-
-  document.querySelectorAll("[data-mode]").forEach(btn => {
-    btn.addEventListener("click", () => {
-      routeMode = btn.dataset.mode;
-      document.querySelectorAll("[data-mode]").forEach(x => x.classList.toggle("active", x === btn));
-    });
-  });
 
   document.querySelectorAll("[data-tab]").forEach(btn => {
     btn.addEventListener("click", () => {
