@@ -6,9 +6,9 @@ env.useBrowserCache = true;
 
 const MODELS = {
   lite: {
-    id: "Qwen2.5-0.5B-Instruct-q4f16_1-MLC",
-    label: "Qwen 2.5 · 0.5B",
-    approx: "≈0.95 GB",
+    id: "SmolLM2-360M-Instruct-q4f16_1-MLC",
+    label: "Instant · SmolLM2 360M",
+    approx: "small quick-start model",
   },
   balanced: {
     id: "Qwen2.5-1.5B-Instruct-q4f16_1-MLC",
@@ -72,6 +72,7 @@ let mediaRecorder = null;
 let audioChunks = [];
 let mediaStream = null;
 let recording = false;
+let queuedMessage = "";
 
 function safeJSON(value, fallback) {
   try { return value ? JSON.parse(value) : fallback; }
@@ -95,9 +96,8 @@ function saveHistory() {
 }
 
 function chooseAutoTier() {
-  const memory = Number(navigator.deviceMemory || 4);
-  if (memory >= 8) return "pro";
-  if (memory >= 4) return "balanced";
+  // Always boot the smallest supported model first so the app becomes usable fast.
+  // Users can manually switch to Balanced or Pro after startup.
   return "lite";
 }
 
@@ -257,9 +257,10 @@ async function loadTextModel(forceTier = selectedTier()) {
   els.modelFoot.textContent = `Loading ${tierDescription(tier)}`;
 
   if (!engine) {
-    els.loader.classList.remove("hide");
+    // Keep the workspace visible while the model downloads in the background.
+    els.loader.classList.add("hide");
     els.loadCopy.textContent = `Loading ${model.label}…`;
-    els.loadNote.textContent = `First download ${model.approx}. It is cached by your browser for later visits.`;
+    els.loadNote.textContent = "The app is ready to use; your first prompt will run as soon as the local model is warm.";
   }
 
   try {
@@ -272,7 +273,8 @@ async function loadTextModel(forceTier = selectedTier()) {
         const progress = Math.max(0, Math.min(1, Number(report.progress || 0)));
         els.loadBar.style.width = `${Math.round(progress * 100)}%`;
         els.loadCopy.textContent = report.text || `Loading ${model.label}…`;
-        setStatus(`${model.label} · ${Math.round(progress * 100)}%`, true);
+        els.modelFoot.textContent = `Warming AI · ${Math.round(progress * 100)}%`;
+        setStatus(`Warming AI · ${Math.round(progress * 100)}%`, true);
       },
     });
 
@@ -280,7 +282,13 @@ async function loadTextModel(forceTier = selectedTier()) {
     els.loadCopy.textContent = "PLQNX is ready";
     els.modelFoot.textContent = `${model.label} · local WebGPU`;
     setStatus(`${model.label} · ready`);
-    setTimeout(() => els.loader.classList.add("hide"), 260);
+    els.loader.classList.add("hide");
+
+    if (queuedMessage) {
+      const next = queuedMessage;
+      queuedMessage = "";
+      queueMicrotask(() => runChat(next));
+    }
   } catch (error) {
     console.error(error);
 
@@ -496,7 +504,10 @@ async function runChat(rawMessage) {
   const message = rawMessage.trim();
   if (!message || busy) return;
   if (!engine) {
-    toast("The text model is still loading or unavailable.");
+    queuedMessage = message;
+    els.prompt.value = "";
+    els.prompt.style.height = "auto";
+    toast("AI is warming up — your message is queued and will run automatically.", 3600);
     return;
   }
 
@@ -802,8 +813,13 @@ restoreHistory();
 registerServiceWorker();
 renderContexts();
 
-loadTextModel().catch((error) => {
+// Never block the interface on a multi-hundred-MB model download.
+els.loader.classList.add("hide");
+setStatus("Warming AI…", true);
+els.modelFoot.textContent = "Instant model warming in background…";
+
+setTimeout(() => loadTextModel().catch((error) => {
   console.error(error);
   els.loader.classList.add("hide");
   toast("PLQNX could not initialize the text model.");
-});
+}), 120);
