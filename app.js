@@ -102,6 +102,7 @@ function chooseAutoTier() {
 }
 
 function selectedTier() {
+  if (els.modelSelect.value === "cloud") return null;
   return els.modelSelect.value === "auto" ? chooseAutoTier() : els.modelSelect.value;
 }
 
@@ -240,6 +241,11 @@ function renderAttachments() {
 }
 
 async function loadTextModel(forceTier = selectedTier()) {
+  if (!forceTier) {
+    setStatus("PLQNX Cloud · ready");
+    els.modelFoot.textContent = "Shared AI · no model download";
+    return;
+  }
   if (!("gpu" in navigator)) {
     els.loadCopy.textContent = "This browser does not expose WebGPU.";
     els.loadNote.textContent = "Use a recent Chrome or Edge build. Vision and file extraction can still work, but local chat needs WebGPU.";
@@ -336,7 +342,7 @@ async function ensureOCR() {
   try {
     ocrReader = await pipeline("image-to-text", "Xenova/trocr-small-printed");
   } finally {
-    setStatus(`${MODELS[currentTier || "lite"].label} · ready`);
+    setStatus(currentTier ? `${MODELS[currentTier].label} · ready` : "PLQNX Cloud · ready");
   }
   return ocrReader;
 }
@@ -500,16 +506,31 @@ function composePrompt(message, contexts) {
   return `${message}\n\nUse the following attachment-derived context when relevant. Do not overstate what the attachment analysis proves.\n\n${contextText}`;
 }
 
+async function remoteChat(message, priorHistory) {
+  const response = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      message,
+      history: (priorHistory || []).slice(-10),
+    }),
+  });
+
+  let body = {};
+  try { body = await response.json(); } catch {}
+
+  if (!response.ok) {
+    throw new Error(body?.detail || body?.error || `AI server returned ${response.status}`);
+  }
+
+  const text = String(body?.text || "").trim();
+  if (!text) throw new Error("AI server returned an empty reply");
+  return { text, model: body?.model || "PLQNX Cloud" };
+}
+
 async function runChat(rawMessage) {
   const message = rawMessage.trim();
   if (!message || busy) return;
-  if (!engine) {
-    queuedMessage = message;
-    els.prompt.value = "";
-    els.prompt.style.height = "auto";
-    toast("AI is warming up — your message is queued and will run automatically.", 3600);
-    return;
-  }
 
   busy = true;
   els.send.disabled = true;
@@ -535,38 +556,51 @@ async function runChat(rawMessage) {
   setStatus("Thinking…", true);
 
   try {
-    const modelHistory = history.slice(-14).map((item) => ({
-      role: item.role,
-      content: item.content,
-    }));
+    let modelLabel = "PLQNX Cloud";
 
-    if (contexts.length) {
-      modelHistory[modelHistory.length - 1] = {
-        role: "user",
-        content: effectivePrompt,
-      };
-    }
-
-    const stream = await engine.chat.completions.create({
-      messages: [
-        { role: "system", content: SYSTEM },
-        ...modelHistory,
-      ],
-      temperature: 0.65,
-      top_p: 0.9,
-      max_tokens: 1100,
-      stream: true,
-    });
-
-    pending.bubble.textContent = "";
-
-    for await (const chunk of stream) {
-      const delta = chunk.choices?.[0]?.delta?.content || "";
-      if (!delta) continue;
-      full += delta;
+    try {
+      const remote = await remoteChat(effectivePrompt, history.slice(0, -1));
+      full = remote.text;
+      modelLabel = remote.model;
       pending.bubble.textContent = full;
       renderOutput(full);
-      els.messages.scrollTop = els.messages.scrollHeight;
+    } catch (remoteError) {
+      if (!engine) throw remoteError;
+
+      const modelHistory = history.slice(-14).map((item) => ({
+        role: item.role,
+        content: item.content,
+      }));
+
+      if (contexts.length) {
+        modelHistory[modelHistory.length - 1] = {
+          role: "user",
+          content: effectivePrompt,
+        };
+      }
+
+      const stream = await engine.chat.completions.create({
+        messages: [
+          { role: "system", content: SYSTEM },
+          ...modelHistory,
+        ],
+        temperature: 0.65,
+        top_p: 0.9,
+        max_tokens: 900,
+        stream: true,
+      });
+
+      pending.bubble.textContent = "";
+      modelLabel = `${MODELS[currentTier].label} · local fallback`;
+
+      for await (const chunk of stream) {
+        const delta = chunk.choices?.[0]?.delta?.content || "";
+        if (!delta) continue;
+        full += delta;
+        pending.bubble.textContent = full;
+        renderOutput(full);
+        els.messages.scrollTop = els.messages.scrollHeight;
+      }
     }
 
     history.push({ role: "assistant", content: full });
@@ -574,7 +608,7 @@ async function runChat(rawMessage) {
 
     const meta = document.createElement("div");
     meta.className = "msgmeta";
-    meta.textContent = `${MODELS[currentTier].label} · local WebGPU${contexts.length ? " · attachment context" : ""}`;
+    meta.textContent = `${modelLabel}${contexts.length ? " · attachment context" : ""}`;
     pending.wrap.appendChild(meta);
 
     if (els.voiceReply.checked && full) speak(full);
@@ -812,7 +846,20 @@ els.modelSelect.addEventListener("change", async () => {
     toast("Wait for the current response to finish before switching models.");
     return;
   }
-  await loadTextModel(selectedTier());
+
+  const tier = selectedTier();
+  if (!tier) {
+    if (engine && typeof engine.unload === "function") {
+      try { await engine.unload(); } catch {}
+    }
+    engine = null;
+    currentTier = null;
+    setStatus("PLQNX Cloud · ready");
+    els.modelFoot.textContent = "Shared AI · no model download";
+    return;
+  }
+
+  await loadTextModel(tier);
 });
 
 setupTabs();
@@ -821,13 +868,7 @@ restoreHistory();
 removeLegacyServiceWorkers();
 renderContexts();
 
-// Never block the interface on a multi-hundred-MB model download.
+// Server inference is the default: users can chat immediately with no model download.
 els.loader.classList.add("hide");
-setStatus("Warming AI…", true);
-els.modelFoot.textContent = "Instant model warming in background…";
-
-setTimeout(() => loadTextModel().catch((error) => {
-  console.error(error);
-  els.loader.classList.add("hide");
-  toast("PLQNX could not initialize the text model.");
-}), 120);
+setStatus("PLQNX Cloud · ready");
+els.modelFoot.textContent = "Shared AI · no model download";
