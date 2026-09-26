@@ -1,11 +1,13 @@
 # PLQNX model fine-tuning
 
-The first PLQNX training target is Qwen/Qwen3-4B-Instruct-2507.
+The first PLQNX training target is dheeyantra/dhee-nxtgen-qwen3-indic.
+
+This is an Apache-2.0 Qwen3-4B derivative specialized for 14 Indic languages, including Hindi, Bengali, Tamil, Telugu, Malayalam, Gujarati, Kannada, Marathi, Odia, Punjabi, Assamese, Maithili, Sanskrit and Sindhi. PLQNX will fine-tune it further for coding, structured output, product behavior and multilingual assistant quality.
 
 Why this model:
 - 4B parameters is practical for a first QLoRA experiment.
 - Apache-2.0 licensed.
-- Qwen3 is multilingual and includes Hindi, Marathi, Bengali, Tamil, Telugu, Kannada, Malayalam and other Indian languages.
+- The selected base is already specialized for 14 Indic languages.
 - It is already instruction-tuned, so we can specialize behavior instead of training from scratch.
 
 Training method:
@@ -35,11 +37,11 @@ python training/train_qlora.py
 
 The adapter will be written to:
 
-artifacts/plqnx-qwen3-4b-lora
+artifacts/plqnx-indic-4b-lora
 
 Evaluate with:
 
-python training/evaluate.py --adapter artifacts/plqnx-qwen3-4b-lora
+python training/evaluate.py --adapter artifacts/plqnx-indic-4b-lora
 
 Before deployment, compare the fine-tuned adapter against the untouched base model on a frozen evaluation set. Check multilingual quality, coding correctness, JSON validity, hallucination rate, safety behavior and latency.
 
