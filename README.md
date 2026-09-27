@@ -88,8 +88,28 @@ Voice and vision are intentionally postponed until the text experience is stable
 
 The GitHub Pages frontend is public. To use the two models on your own Windows PC, run `RUN-PLQNX.bat` so the page can connect to the local PLQNX/Ollama bridge.
 
-## Important publishing note
+## Production deployment
 
-GitHub stores the PLQNX source code. The Ollama model weights stay on the machine running Ollama and should not be committed to GitHub.
+The preferred low-cost production path is Oracle Cloud:
 
-A normal public static GitHub Pages site cannot run these local model files for every visitor. To make PLQNX publicly available later, run this same backend on an always-on machine/server with Ollama, then connect the public frontend to that backend.
+```text
+GitHub Pages frontend
+        ↓
+Oracle Cloud VM
+        ↓
+Nginx + FastAPI
+        ↓
+Ollama
+  ↙             ↘
+Qwen 0.5B     Llama 1B
+```
+
+Deployment files are in:
+
+```text
+deploy/oracle/
+```
+
+Start with `deploy/oracle/README.md`.
+
+The model weights stay on the Oracle VM, not in GitHub. Once the VM and HTTPS API are online, the GitHub Pages frontend can be pointed at that public backend so PLQNX works while the founder's PC is off.
