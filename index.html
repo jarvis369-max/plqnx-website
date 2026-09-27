@@ -4,46 +4,35 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#07130f">
-  <meta name="description" content="PLQNX CORE is a private multimodal AI workspace that runs text, vision and speech models directly in your browser.">
+  <meta name="description" content="PLQNX CORE is a fast text-first AI workspace powered by server-hosted open models.">
   <meta name="application-name" content="PLQNX CORE">
-  <title>PLQNX CORE | Multimodal AI</title>
+  <title>PLQNX CORE | Text AI</title>
   <link rel="manifest" href="/manifest.webmanifest">
-  <link rel="stylesheet" href="/site.css?v=6">
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  <link rel="stylesheet" href="/site.css?v=10">
+  <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-clike.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-markup.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-css.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-clike.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-markup.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-css.min.js"></script>
 </head>
 <body>
-  <div id="loader" class="hidden"><span id="loadCopy"></span><i id="loadBar"></i><span id="loadNote"></span></div>
-
-  <div class="dropmask" id="dropMask">
-    <div class="dropbox">
-      <b>Drop files into PLQNX</b>
-      <span>Images, PDFs, text, Markdown, code, CSV and JSON</span>
-    </div>
-  </div>
-
   <div class="app">
     <header class="topbar">
       <div class="brand">
         <span class="brandmark">P</span>
-        <span>PLQNX CORE<small>Fast multimodal AI</small></span>
+        <span>PLQNX CORE<small>Text-first open AI</small></span>
       </div>
       <div class="topactions">
         <select id="modelSelect" class="model-select" aria-label="Text model">
-          <option value="cloud" selected>PLQNX Fast · no download</option>
-          <option value="lite">Local · 360M</option>
-          <option value="balanced">Local · 1.5B</option>
-          <option value="pro">Local · 3B</option>
+          <option value="qwen-fast" selected>PLQNX Fast · Qwen 0.5B</option>
+          <option value="llama-1b">PLQNX Plus · Llama 1B</option>
         </select>
-        <div class="status"><span class="dot busy" id="statusDot"></span><span id="statusText">Starting…</span></div>
+        <div class="status"><span class="dot" id="statusDot"></span><span id="statusText">Ready</span></div>
       </div>
     </header>
 
@@ -51,46 +40,41 @@
       <section class="chatpane">
         <div class="panehead">
           <div>
-            <h1>Multimodal workspace</h1>
-            <p>Chat instantly with shared AI; vision, voice and files can still use private on-device tools.</p>
+            <h1>PLQNX Text</h1>
+            <p>Fast server-hosted chat. No browser model download, no warm-up screen.</p>
           </div>
           <div class="capabilities">
-            <span class="pill"><strong>●</strong> Text</span>
-            <span class="pill"><strong>●</strong> Vision</span>
-            <span class="pill"><strong>●</strong> Voice</span>
-            <span class="pill"><strong>●</strong> Files</span>
+            <span class="pill"><strong>●</strong> Chat</span>
+            <span class="pill"><strong>●</strong> Code</span>
+            <span class="pill"><strong>●</strong> Writing</span>
+            <span class="pill"><strong>●</strong> Multilingual</span>
           </div>
         </div>
 
         <div class="messages" id="messages">
           <div class="empty" id="emptyState">
             <div class="hero-orb">✦</div>
-            <h3>One workspace.<br>Every kind of input.</h3>
-            <p>Ask a question, speak naturally, drop in a screenshot, analyze a document, generate code, or render an HTML prototype. PLQNX adapts the local model to your device.</p>
+            <h3>Ask PLQNX anything.</h3>
+            <p>Text comes first. Chat, reason, write, explain, summarize and code using the two open models hosted on the PLQNX server.</p>
             <div class="featuregrid">
-              <div class="feature"><b>Ask anything</b><span>Streaming multilingual text and coding answers.</span></div>
-              <div class="feature"><b>Show an image</b><span>Caption and inspect images before reasoning over them.</span></div>
-              <div class="feature"><b>Speak</b><span>Local Whisper transcription with spoken replies.</span></div>
-              <div class="feature"><b>Build</b><span>Markdown, code extraction and sandboxed HTML rendering.</span></div>
+              <div class="feature"><b>Fast chat</b><span>Qwen 0.5B for lightweight everyday responses.</span></div>
+              <div class="feature"><b>Deeper replies</b><span>Switch to Llama 1B when you want the larger model.</span></div>
+              <div class="feature"><b>Code</b><span>Generate, explain and debug code with formatted blocks.</span></div>
+              <div class="feature"><b>Languages</b><span>Use natural language without downloading a model.</span></div>
             </div>
           </div>
         </div>
 
         <div class="composer">
-          <div class="attachments hidden" id="attachments"></div>
-          <div class="composerbox">
-            <input id="fileInput" class="hidden" type="file" multiple accept="image/*,.pdf,.txt,.md,.json,.csv,.js,.ts,.tsx,.jsx,.py,.html,.css,.yaml,.yml,.xml">
-            <button class="iconbtn" id="attachBtn" aria-label="Attach files" title="Attach images or documents">＋</button>
-            <button class="iconbtn" id="micBtn" aria-label="Record voice" title="Voice input">🎙</button>
+          <div class="composerbox text-only">
             <div>
-              <div class="wave hidden" id="wave"><i></i><i></i><i></i><i></i><i></i></div>
-              <textarea id="prompt" rows="1" placeholder="Ask PLQNX anything…"></textarea>
+              <textarea id="prompt" rows="1" placeholder="Message PLQNX…"></textarea>
             </div>
             <button class="sendbtn" id="sendBtn" aria-label="Send">↑</button>
           </div>
           <div class="composerfoot">
-            <span id="modelFoot">Shared AI · no model download</span>
-            <label class="toggle"><input id="voiceReply" type="checkbox"> Speak replies</label>
+            <span id="modelFoot">PLQNX Fast · server model</span>
+            <span>Enter to send · Shift+Enter for new line</span>
           </div>
         </div>
       </section>
@@ -99,16 +83,15 @@
         <div class="panehead">
           <div>
             <h2>Output canvas</h2>
-            <p>Read, inspect code, run HTML and review attachment context.</p>
+            <p>Formatted answers, extracted code and runnable HTML.</p>
           </div>
-          <span class="pill" id="privacyPill">Private by default</span>
+          <span class="pill">Server-hosted</span>
         </div>
 
         <div class="tabs">
           <button class="tab active" data-tab="preview">Preview</button>
           <button class="tab" data-tab="code">Code</button>
           <button class="tab" data-tab="run">Run HTML</button>
-          <button class="tab" data-tab="context">Context</button>
         </div>
 
         <div class="canvasbody">
@@ -117,13 +100,12 @@
           <div class="runview" id="runView">
             <iframe class="runframe" id="runFrame" title="Sandboxed HTML output" sandbox="allow-scripts"></iframe>
           </div>
-          <div class="contextview" id="contextView"><div class="rawempty">Image analysis and extracted document text will appear here.</div></div>
         </div>
       </section>
     </main>
   </div>
 
   <div class="toast" id="toast"></div>
-  <script type="module" src="/app.js?v=6"></script>
+  <script type="module" src="/app.js?v=10"></script>
 </body>
 </html>
