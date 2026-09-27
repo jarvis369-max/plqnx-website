@@ -1,0 +1,21 @@
+name = "plqnx-core-beta"
+main = "agent-os.ts"
+compatibility_date = "2026-09-27"
+
+[vars]
+SITE_ORIGIN = "https://jarvis369-max.github.io"
+PLQNX_CHAT_MODEL = "gpt-6-astra"
+PLQNX_CHIEF_MODEL = "gpt-6-astra"
+PLQNX_WORKER_MODEL = "gpt-6-sol"
+AGENT_AUTOMATION_ENABLED = "false"
+AGENT_MAX_STARTS_PER_TICK = "1"
+# Set this to the PLQNX username that is allowed to control Agent OS.
+AGENT_ADMIN_USER = "REPLACE_WITH_PLQNX_USERNAME"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "plqnx-core-db"
+database_id = "REPLACE_WITH_EXISTING_D1_DATABASE_ID"
+
+[triggers]
+crons = ["0 * * * *"]
