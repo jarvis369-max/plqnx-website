@@ -3,27 +3,30 @@ FROM python:3.12-slim-bookworm
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    HF_CACHE_DIR=/app/.hf-cache \
-    AI_PORT=9000
+    OLLAMA_HOST=127.0.0.1:11434 \
+    OLLAMA_MODELS=/root/.ollama/models
 
 WORKDIR /app
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends nodejs npm ca-certificates \
+    && apt-get install -y --no-install-recommends curl ca-certificates \
+    && curl -fsSL https://ollama.com/install.sh | sh \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt package.json ./
-
-RUN pip install --no-cache-dir -r requirements.txt \
-    && npm install --omit=dev --no-audit --no-fund
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Download the quantized server model during the image build so end users
-# never wait for a model download and production only starts from a warm image.
-RUN mkdir -p "$HF_CACHE_DIR" \
-    && node -e "import('@huggingface/transformers').then(async ({pipeline,env})=>{env.cacheDir=process.env.HF_CACHE_DIR; console.log('Prefetching PLQNX model...'); const p=await pipeline('text-generation','onnx-community/SmolLM2-135M-Instruct-ONNX-MHA',{dtype:'q4'}); console.log('PLQNX model cached'); if(p.dispose) await p.dispose();}).catch(e=>{console.error(e);process.exit(1)})"
+# Bake both user-selected Ollama models into the production image.
+# This makes deploys larger, but visitors never download model weights.
+RUN sh -c 'ollama serve >/tmp/ollama-build.log 2>&1 & pid=$!; \
+    sleep 4; \
+    ollama pull R4C3R/qwen2.5-0.5b-heretic; \
+    ollama pull huihui_ai/llama3.2-abliterate:1b; \
+    kill "$pid"; \
+    wait "$pid" || true'
 
 EXPOSE 8080
 
-CMD ["sh", "-c", "node ai-server.mjs & exec uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080}"]
+CMD ["sh", "-c", "ollama serve >/tmp/ollama.log 2>&1 & python warm_ollama.py && exec uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080}"]
