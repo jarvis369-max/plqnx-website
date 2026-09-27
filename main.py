@@ -3,7 +3,8 @@ import json
 import os
 
 import httpx
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
@@ -33,9 +34,27 @@ self-harm, credential theft, malware deployment, or other clearly harmful activi
 
 app = FastAPI(
     title="PLQNX CORE",
-    version="5.2.0",
+    version="5.3.0",
     description="Text-first PLQNX AI powered by locally installed Ollama models.",
 )
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://jarvis369-max.github.io",
+        "http://127.0.0.1:3000",
+        "http://localhost:3000",
+    ],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
+)
+
+@app.middleware("http")
+async def allow_private_network(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Access-Control-Allow-Private-Network"] = "true"
+    return response
 
 
 class ChatRequest(BaseModel):
@@ -237,7 +256,7 @@ async def health():
 
     return {
         "ok": True,
-        "version": "5.2.0",
+        "version": "5.3.0",
         "runtime": "local-ollama-text-first",
         "chat_endpoint": "/api/chat/stream",
         "models": [value["ollama"] for value in MODELS.values()],
