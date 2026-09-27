@@ -89,9 +89,10 @@ try {
   Write-Host "Warm-up skipped; PLQNX can still start." -ForegroundColor Yellow
 }
 
-Start-Process "http://127.0.0.1:3000"
+Start-Process "https://jarvis369-max.github.io/plqnx-website/"
 Write-Host ""
-Write-Host "PLQNX is starting at http://127.0.0.1:3000" -ForegroundColor Green
+Write-Host "PLQNX public frontend: https://jarvis369-max.github.io/plqnx-website/" -ForegroundColor Green
+Write-Host "Local AI bridge: http://127.0.0.1:3000" -ForegroundColor DarkGray
 Write-Host "Keep this window open while using PLQNX."
 Write-Host ""
 
