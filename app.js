@@ -1,3 +1,15 @@
+const params = new URLSearchParams(window.location.search);
+const storedApiBase = localStorage.getItem("plqnxApiBase") || "";
+const githubPagesDefault = window.location.hostname.endsWith("github.io")
+  ? "http://127.0.0.1:3000"
+  : "";
+const API_BASE = (params.get("api") || storedApiBase || githubPagesDefault).replace(/\/$/, "");
+if (params.get("api")) localStorage.setItem("plqnxApiBase", API_BASE);
+
+function apiUrl(path) {
+  return `${API_BASE}${path}`;
+}
+
 const MODEL_LABELS = {
   "qwen-fast": "PLQNX Fast · Qwen 2.5 0.5B",
   "llama-1b": "PLQNX Plus · Llama 3.2 1B",
@@ -100,7 +112,7 @@ async function streamChat(message, model, priorHistory, onChunk) {
   const timeout = setTimeout(() => controller.abort(), 180000);
 
   try {
-    const response = await fetch("/api/chat/stream", {
+    const response = await fetch(apiUrl("/api/chat/stream"), {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -208,7 +220,7 @@ function restoreHistory() {
 
 async function loadAvailableModels() {
   try {
-    const response = await fetch("/api/models", { cache: "no-store" });
+    const response = await fetch(apiUrl("/api/models"), { cache: "no-store" });
     if (!response.ok) return;
     const data = await response.json();
     if (!Array.isArray(data.models) || !data.models.length) return;
@@ -231,14 +243,17 @@ async function loadAvailableModels() {
 
 async function checkHealth() {
   try {
-    const response = await fetch("/api/ai-health", { cache: "no-store" });
+    const response = await fetch(apiUrl("/api/ai-health"), { cache: "no-store" });
     const data = await response.json();
     if (response.ok && data.ready) {
       setStatus(`${MODEL_LABELS[selectedModel()]} · ready`);
       return true;
     }
   } catch {}
-  setStatus("Local Ollama not ready", true);
+  setStatus("Local engine offline", true);
+  els.modelFoot.textContent = window.location.hostname.endsWith("github.io")
+    ? "Start RUN-PLQNX.bat on this PC to connect your Ollama models"
+    : "Local Ollama is not ready";
   return false;
 }
 
