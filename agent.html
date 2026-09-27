@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f4ece4">
+<title>PLQNX Agent OS</title>
+<meta name="description" content="PLQNX Agent OS dashboard for scheduled Astra-powered startup work.">
+<style>
+:root{color-scheme:light;--bg:#f5eee7;--paper:#fffdfa;--ink:#342c25;--muted:#82766a;--line:#eaded2;--warm:#b47758;--rose:#c9867c;--sage:#879b83;--gold:#dfa85c;--ease:cubic-bezier(.16,1,.3,1)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-height:100vh;color:var(--ink);font:14px/1.6 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;background:radial-gradient(900px 560px at 95% -5%,#f2d8c4aa,transparent 70%),radial-gradient(760px 560px at -5% 105%,#dfe7d8aa,transparent 70%),var(--bg);overflow-x:hidden}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.05;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+body:after{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none;background:conic-gradient(from 10deg,rgba(231,160,124,.17),transparent 22%,rgba(239,181,91,.14),transparent 47%,rgba(137,155,131,.13),transparent 73%,rgba(201,134,124,.14));filter:blur(105px);animation:ambient 26s ease-in-out infinite alternate}
+@keyframes ambient{to{transform:translate3d(3%,2%,0) rotate(14deg) scale(1.04)}}
+a{color:inherit;text-decoration:none}button,input,textarea,select{font:inherit}button{cursor:pointer}.hidden{display:none!important}
+.shell{width:min(1440px,calc(100% - 24px));margin:12px auto;min-height:calc(100vh - 24px);display:grid;grid-template-columns:245px 1fr;gap:12px}
+.sidebar,.main{border:1px solid rgba(255,255,255,.83);background:rgba(255,253,249,.68);box-shadow:0 28px 90px rgba(77,55,39,.13);backdrop-filter:blur(30px) saturate(1.18)}
+.sidebar{border-radius:28px;padding:22px;display:flex;flex-direction:column;gap:18px}.main{border-radius:28px;overflow:hidden}
+.brand{font-size:21px;font-weight:900;letter-spacing:.16em}.brand b{color:#9f664c}.eyebrow{font-size:9px;letter-spacing:.23em;font-weight:850;color:#9f8067;text-transform:uppercase}
+.nav{display:grid;gap:7px}.nav a{padding:11px 13px;border-radius:15px;color:#6e6053;transition:.25s var(--ease)}.nav a:hover,.nav a.active{background:#f0dfd1;transform:translateX(3px);color:#3c3027}
+.sidecard{margin-top:auto;border:1px solid #eadbcb;border-radius:20px;padding:15px;background:#fffdf9a8;color:var(--muted);font-size:12px}.sidecard strong{display:block;color:#4a3b31;margin-bottom:5px}
+.top{min-height:82px;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid rgba(119,89,65,.1);background:#fffdf8a8;backdrop-filter:blur(26px)}.top h1{font-size:21px;letter-spacing:-.04em;margin:0}.top p{margin:3px 0 0;color:var(--muted);font-size:11px}.top-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill,.btn{border:1px solid #e1d3c6;background:#fffdf9cc;border-radius:999px;padding:9px 13px;color:#5b4a3d;box-shadow:0 5px 20px rgba(101,77,56,.08);transition:.25s var(--ease)}.btn:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(101,77,56,.15)}.btn.primary{background:linear-gradient(115deg,#eed2bc,#e8d4c7 50%,#e4e6d7);border-color:#d7b89e;font-weight:750}.btn.danger{color:#9c5554;background:#fff7f5;border-color:#eccfca}.pill{font-size:11px}.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#9aa98d;margin-right:7px;box-shadow:0 0 0 4px rgba(135,155,131,.13)}
+.content{padding:24px;display:grid;gap:18px}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.stat{border:1px solid #fff;border-radius:22px;padding:18px;background:linear-gradient(145deg,#fffefaec,#f6eee6c9);box-shadow:0 17px 45px rgba(90,67,48,.09)}.stat span{display:block;color:var(--muted);font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:800}.stat strong{display:block;font-size:23px;margin-top:5px;letter-spacing:-.05em}
+.grid{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:18px}.panel{border:1px solid #fff;border-radius:25px;background:rgba(255,253,249,.76);box-shadow:0 18px 55px rgba(90,67,48,.09);padding:20px;min-width:0}.panel h2{margin:0 0 5px;font-size:18px;letter-spacing:-.035em}.panel-sub{margin:0 0 17px;color:var(--muted);font-size:12px}
+.form{display:grid;gap:11px}.form label{display:grid;gap:5px;color:#746557;font-size:11px;font-weight:700}.form input,.form textarea,.form select{width:100%;border:1px solid #e6d9cc;background:#fffdfa;border-radius:14px;padding:11px 12px;color:var(--ink);outline:none}.form textarea{min-height:150px;resize:vertical}.form input:focus,.form textarea:focus,.form select:focus{border-color:#c6a78d;box-shadow:0 0 0 4px #dec8b62d}.row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.check{display:flex!important;grid-template-columns:none!important;align-items:center;gap:9px!important;font-weight:600!important}.check input{width:auto!important}
+.schedule-list,.task-list{display:grid;gap:10px}.schedule,.task{border:1px solid #eadfd4;border-radius:18px;background:#fffefb;padding:14px;box-shadow:0 7px 22px rgba(87,65,46,.06)}.schedule-head,.task-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}.schedule h3,.task h3{margin:0;font-size:14px}.meta{color:var(--muted);font-size:10px;margin-top:3px}.status{font-size:9px;font-weight:850;letter-spacing:.1em;text-transform:uppercase;border-radius:99px;padding:5px 8px;background:#f1e7de;color:#7d6857;white-space:nowrap}.status.completed{background:#e8efe4;color:#587058}.status.running,.status.starting{background:#f7e5ce;color:#8b6336}.status.failed{background:#f9dfdc;color:#8c4d4b}.status.pending_approval{background:#eee3f5;color:#715b81}.status.queued{background:#e5ebf1;color:#596f7e}.status.cancelled{background:#eeeae7;color:#7a726c}
+.task-result{margin-top:11px;border-top:1px solid #eee3d9;padding-top:10px;color:#4f463e;white-space:pre-wrap;max-height:250px;overflow:auto}.error{color:#a24f4f}.empty{padding:22px;text-align:center;color:var(--muted);border:1px dashed #dfd1c3;border-radius:18px}
+.switch{position:relative;width:43px;height:24px;flex:none}.switch input{opacity:0;width:0;height:0}.slider{position:absolute;inset:0;border-radius:99px;background:#ddd2c7;transition:.2s}.slider:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;border-radius:50%;background:#fff;box-shadow:0 2px 8px #0002;transition:.2s}.switch input:checked+.slider{background:#9cab91}.switch input:checked+.slider:before{transform:translateX(19px)}
+.toast{position:fixed;right:20px;bottom:20px;max-width:min(390px,calc(100vw - 40px));padding:12px 15px;border-radius:15px;background:#3c3129;color:#fff;box-shadow:0 18px 55px #0003;z-index:20;animation:appear .25s var(--ease)}@keyframes appear{from{opacity:0;transform:translateY(8px)}}
+@media(max-width:1000px){.shell{grid-template-columns:1fr}.sidebar{display:none}.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}}
+@media(max-width:600px){.shell{width:calc(100% - 12px);margin:6px auto}.main{border-radius:22px}.top{padding:14px;align-items:flex-start;flex-direction:column}.content{padding:13px}.stats{grid-template-columns:1fr 1fr}.stat{padding:14px}.panel{padding:15px}.task-head,.schedule-head{align-items:flex-start}}
+@media(prefers-reduced-motion:reduce){body:after,.toast{animation:none}.btn,.nav a{transition:none}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <a class="brand" href="./">PL<b>QNX</b></a>
+    <div class="eyebrow">Agent OS · Founder Control</div>
+    <nav class="nav">
+      <a class="active" href="./agent.html">Agent dashboard</a>
+      <a href="./core.html">CORE chat</a>
+      <a href="./">Home</a>
+    </nav>
+    <div class="sidecard"><strong>Human approval first</strong>Manual agent tasks default to approval-required. Scheduled automations stay disabled until you explicitly turn them on.</div>
+  </aside>
+
+  <main class="main">
+    <header class="top">
+      <div><h1>PLQNX Agent OS ✦</h1><p id="subtitle">Connecting to your startup automation layer…</p></div>
+      <div class="top-actions">
+        <span class="pill"><span class="dot"></span><span id="automationState">Checking</span></span>
+        <button class="btn" id="refresh" type="button">↻ Refresh</button>
+        <button class="btn primary" id="runQueue" type="button">Run queue</button>
+      </div>
+    </header>
+
+    <section class="content">
+      <div class="stats">
+        <div class="stat"><span>Pending approval</span><strong id="pendingCount">0</strong></div>
+        <div class="stat"><span>Queued / running</span><strong id="activeCount">0</strong></div>
+        <div class="stat"><span>Completed</span><strong id="completedCount">0</strong></div>
+        <div class="stat"><span>Failed</span><strong id="failedCount">0</strong></div>
+      </div>
+
+      <div class="grid">
+        <section class="panel">
+          <h2>Create an agent task</h2>
+          <p class="panel-sub">Astra handles high-reasoning work. Lower-cost worker tasks can use Sol.</p>
+          <form id="taskForm" class="form">
+            <label>Agent
+              <select id="kind">
+                <option value="chief">Chief Agent · Astra</option>
+                <option value="research">Research Agent · Astra</option>
+                <option value="engineering">Engineering Agent · Astra</option>
+                <option value="operations">Operations Agent · Sol</option>
+                <option value="growth">Growth Agent · Sol</option>
+                <option value="support">Support Agent · Sol</option>
+                <option value="brief">Daily Brief Agent · Sol</option>
+              </select>
+            </label>
+            <label>Task title<input id="title" maxlength="120" placeholder="Example: Review PLQNX launch readiness" required></label>
+            <label>Instructions<textarea id="prompt" maxlength="8000" placeholder="Describe the result you want the agent to produce…" required></textarea></label>
+            <label class="check"><input id="approval" type="checkbox" checked> Require my approval before the task starts</label>
+            <div class="row"><button class="btn primary" type="submit">Create task</button><span class="meta">No external destructive tools are enabled.</span></div>
+          </form>
+        </section>
+
+        <section class="panel">
+          <h2>24/7 schedules</h2>
+          <p class="panel-sub">Schedules are disabled by default to prevent accidental API spending.</p>
+          <div class="schedule-list" id="schedules"><div class="empty">Loading schedules…</div></div>
+        </section>
+      </div>
+
+      <section class="panel">
+        <div class="schedule-head">
+          <div><h2>Agent activity</h2><p class="panel-sub">Latest managed OpenAI agent sessions and results.</p></div>
+          <span class="pill" id="models">Models loading…</span>
+        </div>
+        <div class="task-list" id="tasks"><div class="empty">Loading tasks…</div></div>
+      </section>
+    </section>
+  </main>
+</div>
+<div id="toast" class="toast hidden" role="status"></div>
+
+<script>
+(() => {
+"use strict";
+const API = "https://plqnx-core-beta.sasankm2009.workers.dev";
+const token = sessionStorage.getItem("plqnx_v3_token") || "";
+const el = id => document.getElementById(id);
+let busy = false;
+
+function toast(message) {
+  const node = el("toast");
+  node.textContent = message;
+  node.classList.remove("hidden");
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => node.classList.add("hidden"), 3500);
+}
+
+async function call(path, method = "GET", body) {
+  const headers = {"Content-Type":"application/json"};
+  if (token) headers.Authorization = "Bearer " + token;
+  const response = await fetch(API + path, {
+    method,
+    headers,
+    body: body === undefined ? undefined : JSON.stringify(body)
+  });
+  let data;
+  try { data = await response.json(); } catch { data = {error:"Unexpected server response."}; }
+  if (!response.ok) {
+    const error = new Error(data.error || "Request failed.");
+    error.status = response.status;
+    throw error;
+  }
+  return data;
+}
+
+function countMap(rows) {
+  const map = {};
+  for (const row of rows || []) map[row.status] = Number(row.n || 0);
+  return map;
+}
+
+function fmtTime(value) {
+  if (!value) return "Never";
+  return new Date(Number(value) * 1000).toLocaleString();
+}
+
+function statusClass(value) {
+  return "status " + String(value || "").replace(/[^a-z_]/g, "");
+}
+
+function safeText(value) {
+  return value == null ? "" : String(value);
+}
+
+function renderTasks(tasks) {
+  const root = el("tasks");
+  root.replaceChildren();
+  if (!tasks.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty";
+    empty.textContent = "No agent tasks yet.";
+    root.append(empty);
+    return;
+  }
+
+  for (const task of tasks) {
+    const card = document.createElement("article");
+    card.className = "task";
+
+    const head = document.createElement("div");
+    head.className = "task-head";
+    const info = document.createElement("div");
+    const title = document.createElement("h3");
+    title.textContent = task.title;
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    meta.textContent = task.kind + " · " + task.model + " · " + fmtTime(task.created_at);
+    info.append(title, meta);
+
+    const badge = document.createElement("span");
+    badge.className = statusClass(task.status);
+    badge.textContent = task.status.replaceAll("_", " ");
+    head.append(info, badge);
+    card.append(head);
+
+    const controls = document.createElement("div");
+    controls.className = "row";
+    controls.style.marginTop = "10px";
+
+    if (task.status === "pending_approval") {
+      const approve = document.createElement("button");
+      approve.className = "btn primary";
+      approve.type = "button";
+      approve.textContent = "Approve";
+      approve.onclick = async () => {
+        try {
+          await call("/v1/agent/tasks/" + task.id + "/approve", "POST");
+          toast("Task approved and queued.");
+          await refresh();
+        } catch (error) { toast(error.message); }
+      };
+      controls.append(approve);
+    }
+
+    if (["pending_approval","queued","starting"].includes(task.status)) {
+      const cancel = document.createElement("button");
+      cancel.className = "btn danger";
+      cancel.type = "button";
+      cancel.textContent = "Cancel";
+      cancel.onclick = async () => {
+        try {
+          await call("/v1/agent/tasks/" + task.id + "/cancel", "POST");
+          toast("Task cancelled.");
+          await refresh();
+        } catch (error) { toast(error.message); }
+      };
+      controls.append(cancel);
+    }
+
+    if (controls.children.length) card.append(controls);
+
+    if (task.error) {
+      const error = document.createElement("div");
+      error.className = "task-result error";
+      error.textContent = task.error;
+      card.append(error);
+    } else if (task.result) {
+      const result = document.createElement("div");
+      result.className = "task-result";
+      result.textContent = task.result;
+      card.append(result);
+    }
+
+    root.append(card);
+  }
+}
+
+function renderSchedules(schedules) {
+  const root = el("schedules");
+  root.replaceChildren();
+  if (!schedules.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty";
+    empty.textContent = "No schedules installed. Run the Agent OS D1 migration.";
+    root.append(empty);
+    return;
+  }
+
+  for (const schedule of schedules) {
+    const card = document.createElement("article");
+    card.className = "schedule";
+    const head = document.createElement("div");
+    head.className = "schedule-head";
+
+    const info = document.createElement("div");
+    const title = document.createElement("h3");
+    title.textContent = schedule.title;
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    meta.textContent = schedule.kind + " · every " + schedule.every_hours + "h · next " + fmtTime(schedule.next_run_at);
+    info.append(title, meta);
+
+    const label = document.createElement("label");
+    label.className = "switch";
+    label.title = schedule.enabled ? "Disable schedule" : "Enable schedule";
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.checked = Boolean(schedule.enabled);
+    const slider = document.createElement("span");
+    slider.className = "slider";
+    label.append(input, slider);
+
+    input.onchange = async () => {
+      input.disabled = true;
+      try {
+        await call("/v1/agent/schedules/" + schedule.id, "PATCH", {enabled: input.checked});
+        toast(input.checked ? "Schedule enabled." : "Schedule disabled.");
+        await refresh();
+      } catch (error) {
+        input.checked = !input.checked;
+        toast(error.message);
+      } finally { input.disabled = false; }
+    };
+
+    head.append(info, label);
+    card.append(head);
+    root.append(card);
+  }
+}
+
+async function refresh() {
+  if (busy) return;
+  busy = true;
+  try {
+    if (!token) throw Object.assign(new Error("Sign in to PLQNX CORE first."), {status:401});
+    await call("/v1/me");
+    const [status, tasks, schedules] = await Promise.all([
+      call("/v1/agent/status"),
+      call("/v1/agent/tasks"),
+      call("/v1/agent/schedules")
+    ]);
+
+    const counts = countMap(status.counts);
+    el("pendingCount").textContent = counts.pending_approval || 0;
+    el("activeCount").textContent =
+      (counts.queued || 0) + (counts.starting || 0) + (counts.running || 0);
+    el("completedCount").textContent = counts.completed || 0;
+    el("failedCount").textContent = counts.failed || 0;
+    el("automationState").textContent = status.automationEnabled ? "Automation ON" : "Automation paused";
+    el("subtitle").textContent = status.automationEnabled
+      ? "Cloudflare is waking your agent queue on schedule."
+      : "Manual mode is active. Scheduled API spending is paused.";
+    el("models").textContent = "Chat " + status.chatModel + " · Chief " + status.chiefModel + " · Worker " + status.workerModel;
+    renderTasks(tasks.tasks || []);
+    renderSchedules(schedules.schedules || []);
+  } catch (error) {
+    el("subtitle").textContent = error.message;
+    if (error.status === 401) {
+      toast("Sign in to PLQNX CORE, then reopen Agent OS.");
+    } else if (error.status === 403) {
+      toast("Set AGENT_ADMIN_USER in Cloudflare to your PLQNX username.");
+    } else {
+      toast(error.message);
+    }
+  } finally {
+    busy = false;
+  }
+}
+
+el("taskForm").addEventListener("submit", async event => {
+  event.preventDefault();
+  const button = event.submitter;
+  if (button) button.disabled = true;
+  try {
+    const data = await call("/v1/agent/tasks", "POST", {
+      kind: el("kind").value,
+      title: el("title").value.trim(),
+      prompt: el("prompt").value.trim(),
+      requiresApproval: el("approval").checked
+    });
+    toast(data.status === "pending_approval" ? "Task created. Approve it when ready." : "Task queued.");
+    el("taskForm").reset();
+    el("approval").checked = true;
+    await refresh();
+  } catch (error) {
+    toast(error.message);
+  } finally {
+    if (button) button.disabled = false;
+  }
+});
+
+el("runQueue").onclick = async () => {
+  const button = el("runQueue");
+  button.disabled = true;
+  button.textContent = "Running…";
+  try {
+    await call("/v1/agent/run", "POST");
+    toast("Agent queue processed.");
+    await refresh();
+  } catch (error) {
+    toast(error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = "Run queue";
+  }
+};
+
+el("refresh").onclick = refresh;
+refresh();
+setInterval(refresh, 20000);
+})();
+</script>
+</body>
+</html>
