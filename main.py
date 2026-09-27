@@ -75,11 +75,45 @@ app.add_middleware(
 )
 
 
+class CursorContext:
+    def __init__(self, cursor):
+        self.cursor = cursor
+
+    def __enter__(self):
+        return self.cursor
+
+    def __exit__(self, exc_type, exc, tb):
+        self.cursor.close()
+        return False
+
+
+class DBConnection:
+    def __init__(self, connection):
+        self.connection = connection
+
+    def cursor(self):
+        return CursorContext(self.connection.cursor())
+
+    def commit(self):
+        return self.connection.commit()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        if exc_type is None:
+            self.connection.commit()
+        else:
+            self.connection.rollback()
+        self.connection.close()
+        return False
+
+
 def connect():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
-    return conn
+    return DBConnection(conn)
 
 
 def now_ts():
@@ -198,7 +232,7 @@ def ensure_schema():
     """
     with connect() as conn:
         with conn.cursor() as cur:
-            cur.execute(ddl)
+            cur.executescript(ddl)
             current = now_ts()
             defaults = [
                 (
