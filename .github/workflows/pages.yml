@@ -27,7 +27,7 @@ jobs:
       - name: Prepare static site
         run: |
           mkdir -p _site
-          cp index.html core.html agent.html app.js site.css manifest.webmanifest sw.js fluid-1.css fluid-2.css fluid-3.css fluid-4.css fluid.js _site/
+          cp index.html core.html agent.html products.html about.html roadmap.html faq.html contact.html privacy.html terms.html support.html app.js site.css manifest.webmanifest sw.js fluid-1.css fluid-2.css fluid-3.css fluid-4.css fluid.js _site/
           touch _site/.nojekyll
 
       - name: Configure Pages
