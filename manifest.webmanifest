@@ -1,8 +1,9 @@
 {
   "name": "PLQNX CORE",
   "short_name": "PLQNX",
-  "description": "Multimodal local AI workspace",
-  "start_url": "/",
+  "description": "Text-first AI workspace powered by local Ollama models",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#07130f",
   "theme_color": "#07130f",
