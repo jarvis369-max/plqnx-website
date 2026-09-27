@@ -403,7 +403,7 @@ main:before{
     <p id="authDescription">Sign in to reopen your conversations across page refreshes.</p>
     <label>Username<input id="loginName" autocomplete="username" minlength="3" maxlength="20" pattern="[A-Za-z][A-Za-z0-9_]{2,19}" required></label>
     <label>Password<input id="loginPassword" type="password" autocomplete="current-password" minlength="12" maxlength="128" required></label>
-    <label id="inviteLabel" class="hidden">Private beta access code<input id="invite" type="password" autocomplete="off"></label>
+    <label id="inviteLabel" class="hidden">Invite code (optional for founder setup)<input id="invite" type="password" autocomplete="off"></label>
     <div class="error" id="authError" role="alert"></div>
     <button class="btn primary" type="submit" id="authSubmit">Sign in</button>
     <button class="switch" id="switchMode" type="button">Have an invitation? Create account</button>
@@ -430,7 +430,7 @@ main:before{
 <script>
 (()=>{
 "use strict";
-const API="https://plqnx-core-beta.sasankm2009.workers.dev";
+const API="https://plqnx-core-live.onrender.com";
 const el=id=>document.getElementById(id);
 let access=sessionStorage.getItem("plqnx_v3_token")||"";
 let name=sessionStorage.getItem("plqnx_v3_name")||"";
@@ -542,11 +542,11 @@ function authScreen(open){el("overlay").classList.toggle("hidden",!open)}
 function renderMode(){
   const reg=mode==="register";
   el("authTitle").textContent=reg?"Create a beta account":"Welcome back";
-  el("authDescription").textContent=reg?"Use your private beta code to register.":"Sign in to reopen saved conversations.";
+  el("authDescription").textContent=reg?"Create the first PLQNX account. Invite code is optional during founder setup.":"Sign in to reopen saved conversations.";
   el("authSubmit").textContent=reg?"Create account":"Sign in";
   el("switchMode").textContent=reg?"Already registered? Sign in":"Have an invitation? Create account";
   el("inviteLabel").classList.toggle("hidden",!reg);
-  el("invite").required=reg;
+  el("invite").required=false;
   el("loginPassword").autocomplete=reg?"new-password":"current-password";
   showError("");
 }
