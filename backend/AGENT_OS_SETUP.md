@@ -1,6 +1,6 @@
 # PLQNX Agent OS setup
 
-PLQNX Agent OS keeps the existing PLQNX CORE UI, accounts, saved conversations and animations, but replaces the AI layer with Kie.ai and adds scheduled managed agents.
+PLQNX Agent OS keeps the existing PLQNX CORE UI, accounts, saved conversations and animations, but replaces the AI layer with Kie.ai and adds scheduled agent tasks.
 
 ## What is implemented
 
@@ -54,7 +54,7 @@ AGENT_ADMIN_USER=YOUR_PLQNX_USERNAME
 AGENT_AUTOMATION_ENABLED=false
 AGENT_MAX_STARTS_PER_TICK=1
 
-The Kie.ai API key needs permissions for the Agents API session operations and Responses inference.
+The Kie.ai API key must be active and have enough credits for the selected chat models.
 
 ## 3. Cron
 
@@ -76,7 +76,7 @@ Create one task with approval enabled, approve it, then press Run queue. The das
 
 ## 5. Enable 24/7 schedules
 
-After one manual task succeeds and you have set an Kie.ai budget/usage alert, change:
+After one manual task succeeds and you have set a Kie.ai budget/usage alert, change:
 
 AGENT_AUTOMATION_ENABLED=true
 
@@ -86,4 +86,4 @@ The default schedule rows are disabled. This is intentional so cloning/deploying
 
 ## Approval boundary
 
-The first Agent OS version can research, reason, draft, review and produce code or plans inside Kie.ai managed sessions. It does not send email, publish content, spend money, merge production code, change credentials or delete external data. Those actions should be added later as explicit tools with separate approval gates.
+The first Agent OS version can research, reason, draft, review and produce code or plans through Kie.ai model calls orchestrated by Cloudflare and D1. It does not send email, publish content, spend money, merge production code, change credentials or delete external data. Those actions should be added later as explicit tools with separate approval gates.
