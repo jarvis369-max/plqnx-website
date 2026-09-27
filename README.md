@@ -21,7 +21,7 @@ Cloudflare Worker
   ├─ auth + rate limits
   ├─ D1 conversations
   ├─ D1 agent queue
-  └─ hourly Cron Trigger
+  └─ 15-minute Cron Trigger
            │
            ▼
 OpenAI
@@ -60,7 +60,7 @@ Enable those capabilities later only as explicit tools with separate approval ch
 
 - `backend/agent-os.ts` — Cloudflare Worker / OpenAI integration
 - `backend/agent-os-schema.sql` — D1 task and schedule migration
-- `backend/wrangler.agent-os.toml` — Worker config and hourly cron
+- `backend/wrangler.agent-os.toml` — Worker config and 15-minute cron
 - `backend/AGENT_OS_SETUP.md` — deployment instructions
 - `agent.html` — founder dashboard
 - `.github/workflows/deploy-agent-os.yml` — manual GitHub Actions deployment
