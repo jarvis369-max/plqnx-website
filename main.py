@@ -9,13 +9,13 @@ import uuid
 from datetime import datetime, timezone
 
 import httpx
-import psycopg
-from psycopg.rows import dict_row
+import sqlite3
+from pathlib import Path
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+DB_PATH = Path(os.getenv("PLQNX_DB_PATH", "/tmp/plqnx.db"))
 KIE_API_KEY = os.getenv("KIE_API_KEY", "").strip()
 BETA_ACCESS_CODE = os.getenv("BETA_ACCESS_CODE", "").strip()
 SITE_ORIGIN = os.getenv("SITE_ORIGIN", "https://jarvis369-max.github.io").rstrip("/")
@@ -76,9 +76,10 @@ app.add_middleware(
 
 
 def connect():
-    if not DATABASE_URL:
-        raise RuntimeError("DATABASE_URL is not configured")
-    return psycopg.connect(DATABASE_URL, row_factory=dict_row)
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
+    return conn
 
 
 def now_ts():
@@ -112,14 +113,14 @@ def ensure_schema():
       username TEXT NOT NULL UNIQUE,
       password_salt TEXT NOT NULL,
       password_hash TEXT NOT NULL,
-      created_at BIGINT NOT NULL
+      created_at INTEGER NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS sessions (
       token_hash TEXT PRIMARY KEY,
       user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      expires_at BIGINT NOT NULL,
-      created_at BIGINT NOT NULL
+      expires_at INTEGER NOT NULL,
+      created_at INTEGER NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
 
@@ -127,8 +128,8 @@ def ensure_schema():
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       title TEXT NOT NULL DEFAULT 'New chat',
-      created_at BIGINT NOT NULL,
-      updated_at BIGINT NOT NULL
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_conversations_user ON conversations(user_id, updated_at DESC);
 
@@ -137,7 +138,7 @@ def ensure_schema():
       conversation_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
       role TEXT NOT NULL CHECK(role IN ('user','model')),
       content TEXT NOT NULL,
-      created_at BIGINT NOT NULL
+      created_at INTEGER NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id, created_at, id);
 
@@ -150,7 +151,7 @@ def ensure_schema():
 
     CREATE TABLE IF NOT EXISTS auth_limits (
       key TEXT PRIMARY KEY,
-      window_start BIGINT NOT NULL,
+      window_start INTEGER NOT NULL,
       requests INTEGER NOT NULL DEFAULT 0
     );
 
@@ -166,11 +167,11 @@ def ensure_schema():
       created_by TEXT REFERENCES users(id) ON DELETE SET NULL,
       result TEXT,
       error TEXT,
-      approved_at BIGINT,
-      started_at BIGINT,
-      completed_at BIGINT,
-      created_at BIGINT NOT NULL,
-      updated_at BIGINT NOT NULL
+      approved_at INTEGER,
+      started_at INTEGER,
+      completed_at INTEGER,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_agent_tasks_status ON agent_tasks(status, created_at);
 
@@ -179,7 +180,7 @@ def ensure_schema():
       task_id TEXT NOT NULL REFERENCES agent_tasks(id) ON DELETE CASCADE,
       event_type TEXT NOT NULL,
       payload TEXT,
-      created_at BIGINT NOT NULL
+      created_at INTEGER NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS agent_schedules (
@@ -189,10 +190,10 @@ def ensure_schema():
       prompt TEXT NOT NULL,
       every_hours INTEGER NOT NULL,
       enabled INTEGER NOT NULL DEFAULT 0,
-      next_run_at BIGINT NOT NULL,
-      last_run_at BIGINT,
-      created_at BIGINT NOT NULL,
-      updated_at BIGINT NOT NULL
+      next_run_at INTEGER NOT NULL,
+      last_run_at INTEGER,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
     );
     """
     with connect() as conn:
@@ -229,7 +230,7 @@ def ensure_schema():
                 cur.execute(
                     """
                     INSERT INTO agent_schedules(id,kind,title,prompt,every_hours,enabled,next_run_at,created_at,updated_at)
-                    VALUES(%s,%s,%s,%s,%s,0,%s,%s,%s)
+                    VALUES(?,?,?,?,?,0,?,?,?)
                     ON CONFLICT (id) DO NOTHING
                     """,
                     (sid, kind, title, prompt, hours, current + 3600, current, current),
@@ -247,12 +248,12 @@ def throttle(kind: str, identifier: str, window_seconds: int, limit: int):
     key = sha256(f"{secret}|{kind}|{identifier}")
     with connect() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT window_start,requests FROM auth_limits WHERE key=%s", (key,))
+            cur.execute("SELECT window_start,requests FROM auth_limits WHERE key=?", (key,))
             row = cur.fetchone()
             if not row or int(row["window_start"]) != current_window:
                 cur.execute(
                     """
-                    INSERT INTO auth_limits(key,window_start,requests) VALUES(%s,%s,1)
+                    INSERT INTO auth_limits(key,window_start,requests) VALUES(?,?,1)
                     ON CONFLICT(key) DO UPDATE SET window_start=EXCLUDED.window_start, requests=1
                     """,
                     (key, current_window),
@@ -261,7 +262,7 @@ def throttle(kind: str, identifier: str, window_seconds: int, limit: int):
                 return True
             if int(row["requests"]) >= limit:
                 return False
-            cur.execute("UPDATE auth_limits SET requests=requests+1 WHERE key=%s", (key,))
+            cur.execute("UPDATE auth_limits SET requests=requests+1 WHERE key=?", (key,))
         conn.commit()
     return True
 
@@ -277,7 +278,7 @@ def bearer_user(request: Request):
                 """
                 SELECT users.id,users.username,sessions.token_hash
                 FROM sessions JOIN users ON users.id=sessions.user_id
-                WHERE sessions.token_hash=%s AND sessions.expires_at>%s
+                WHERE sessions.token_hash=? AND sessions.expires_at>?
                 """,
                 (hashed, now_ts()),
             )
@@ -291,7 +292,7 @@ def create_session(user_id: str):
     with connect() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "INSERT INTO sessions(token_hash,user_id,expires_at,created_at) VALUES(%s,%s,%s,%s)",
+                "INSERT INTO sessions(token_hash,user_id,expires_at,created_at) VALUES(?,?,?,?)",
                 (hashed, user_id, expires, now_ts()),
             )
         conn.commit()
@@ -394,7 +395,7 @@ def queue_due_schedules():
                 """
                 SELECT id,kind,title,prompt,every_hours
                 FROM agent_schedules
-                WHERE enabled=1 AND next_run_at<=%s
+                WHERE enabled=1 AND next_run_at<=?
                 ORDER BY next_run_at ASC LIMIT 6
                 """,
                 (current,),
@@ -405,7 +406,7 @@ def queue_due_schedules():
                 cur.execute(
                     """
                     INSERT INTO agent_tasks(id,kind,title,prompt,status,model,source,requires_approval,created_at,updated_at)
-                    VALUES(%s,%s,%s,%s,'queued',%s,'schedule',0,%s,%s)
+                    VALUES(?,?,?,?,'queued',?,'schedule',0,?,?)
                     """,
                     (
                         task_id,
@@ -418,7 +419,7 @@ def queue_due_schedules():
                     ),
                 )
                 cur.execute(
-                    "UPDATE agent_schedules SET last_run_at=%s,next_run_at=%s,updated_at=%s WHERE id=%s",
+                    "UPDATE agent_schedules SET last_run_at=?,next_run_at=?,updated_at=? WHERE id=?",
                     (
                         current,
                         current + max(1, int(schedule["every_hours"])) * 3600,
@@ -427,7 +428,7 @@ def queue_due_schedules():
                     ),
                 )
                 cur.execute(
-                    "INSERT INTO agent_events(id,task_id,event_type,payload,created_at) VALUES(%s,%s,'scheduled',%s,%s)",
+                    "INSERT INTO agent_events(id,task_id,event_type,payload,created_at) VALUES(?,?,'scheduled',?,?)",
                     (new_id(), task_id, json.dumps({"scheduleId": schedule["id"]}), current),
                 )
         conn.commit()
@@ -437,7 +438,7 @@ async def process_queued_tasks(limit=1):
     with connect() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT id,kind,title,prompt,model FROM agent_tasks WHERE status='queued' ORDER BY created_at ASC LIMIT %s",
+                "SELECT id,kind,title,prompt,model FROM agent_tasks WHERE status='queued' ORDER BY created_at ASC LIMIT ?",
                 (limit,),
             )
             tasks = cur.fetchall()
@@ -445,7 +446,7 @@ async def process_queued_tasks(limit=1):
         with connect() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "UPDATE agent_tasks SET status='running',started_at=%s,updated_at=%s WHERE id=%s AND status='queued'",
+                    "UPDATE agent_tasks SET status='running',started_at=?,updated_at=? WHERE id=? AND status='queued'",
                     (now_ts(), now_ts(), task["id"]),
                 )
                 claimed = cur.rowcount
@@ -460,13 +461,13 @@ async def process_queued_tasks(limit=1):
                     cur.execute(
                         """
                         UPDATE agent_tasks
-                        SET status='completed',result=%s,completed_at=%s,updated_at=%s,error=NULL
-                        WHERE id=%s
+                        SET status='completed',result=?,completed_at=?,updated_at=?,error=NULL
+                        WHERE id=?
                         """,
                         (result["answer"], current, current, task["id"]),
                     )
                     cur.execute(
-                        "INSERT INTO agent_events(id,task_id,event_type,payload,created_at) VALUES(%s,%s,'completed',%s,%s)",
+                        "INSERT INTO agent_events(id,task_id,event_type,payload,created_at) VALUES(?,?,'completed',?,?)",
                         (
                             new_id(),
                             task["id"],
@@ -484,7 +485,7 @@ async def process_queued_tasks(limit=1):
             with connect() as conn:
                 with conn.cursor() as cur:
                     cur.execute(
-                        "UPDATE agent_tasks SET status='failed',error=%s,updated_at=%s WHERE id=%s",
+                        "UPDATE agent_tasks SET status='failed',error=?,updated_at=? WHERE id=?",
                         (str(exc)[:500], now_ts(), task["id"]),
                     )
                 conn.commit()
@@ -532,9 +533,19 @@ class SchedulePatch(BaseModel):
     everyHours: int | None = None
 
 
+async def scheduler_loop():
+    while True:
+        try:
+            await run_agent_scheduler(manual=False)
+        except Exception as exc:
+            print("PLQNX scheduler error:", type(exc).__name__)
+        await asyncio.sleep(900)
+
+
 @app.on_event("startup")
 async def startup():
     ensure_schema()
+    asyncio.create_task(scheduler_loop())
 
 
 @app.get("/health")
@@ -544,7 +555,7 @@ async def health():
         "service": "plqnx-core",
         "provider": "kie.ai",
         "chatModel": CHAT_MODEL,
-        "databaseConfigured": bool(DATABASE_URL),
+        "databaseConfigured": True,
         "kieConfigured": bool(KIE_API_KEY),
     }
 
@@ -555,7 +566,7 @@ async def status():
         "version": "persistent-v1",
         "accounts": True,
         "permanentMemory": True,
-        "securityVersion": "render-kie-v1",
+        "securityVersion": "render-kie-sqlite-v1",
         "renameConversation": True,
         "aiProvider": "kie.ai",
         "chatModel": CHAT_MODEL,
@@ -586,10 +597,10 @@ async def register(request: Request, data: AuthRequest):
             uid = new_id()
             try:
                 cur.execute(
-                    "INSERT INTO users(id,username,password_salt,password_hash,created_at) VALUES(%s,%s,%s,%s,%s)",
+                    "INSERT INTO users(id,username,password_salt,password_hash,created_at) VALUES(?,?,?,?,?)",
                     (uid, data.username, salt, hashed, now_ts()),
                 )
-            except psycopg.errors.UniqueViolation:
+            except sqlite3.IntegrityError:
                 raise HTTPException(409, "Username is unavailable.")
         conn.commit()
     session = create_session(uid)
@@ -605,7 +616,7 @@ async def login(request: Request, data: AuthRequest):
     with connect() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT id,username,password_salt,password_hash FROM users WHERE lower(username)=lower(%s)",
+                "SELECT id,username,password_salt,password_hash FROM users WHERE lower(username)=lower(?)",
                 (data.username,),
             )
             user = cur.fetchone()
@@ -631,7 +642,7 @@ async def logout(request: Request):
         raise HTTPException(401, "Please sign in again.")
     with connect() as conn:
         with conn.cursor() as cur:
-            cur.execute("DELETE FROM sessions WHERE token_hash=%s", (user["token_hash"],))
+            cur.execute("DELETE FROM sessions WHERE token_hash=?", (user["token_hash"],))
         conn.commit()
     return {"ok": True}
 
@@ -644,7 +655,7 @@ async def list_conversations(request: Request):
     with connect() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT id,title,created_at,updated_at FROM conversations WHERE user_id=%s ORDER BY updated_at DESC LIMIT 50",
+                "SELECT id,title,created_at,updated_at FROM conversations WHERE user_id=? ORDER BY updated_at DESC LIMIT 50",
                 (user["id"],),
             )
             rows = cur.fetchall()
@@ -662,7 +673,7 @@ async def create_conversation(request: Request, data: ConversationCreate):
     with connect() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "INSERT INTO conversations(id,user_id,title,created_at,updated_at) VALUES(%s,%s,%s,%s,%s)",
+                "INSERT INTO conversations(id,user_id,title,created_at,updated_at) VALUES(?,?,?,?,?)",
                 (cid, user["id"], title, current, current),
             )
         conn.commit()
@@ -677,14 +688,14 @@ async def get_conversation(conversation_id: str, request: Request):
     with connect() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT id,title FROM conversations WHERE id=%s AND user_id=%s",
+                "SELECT id,title FROM conversations WHERE id=? AND user_id=?",
                 (conversation_id, user["id"]),
             )
             convo = cur.fetchone()
             if not convo:
                 raise HTTPException(404, "Conversation not found.")
             cur.execute(
-                "SELECT role,content,created_at FROM messages WHERE conversation_id=%s ORDER BY created_at ASC,id ASC LIMIT 150",
+                "SELECT role,content,created_at FROM messages WHERE conversation_id=? ORDER BY created_at ASC,id ASC LIMIT 150",
                 (conversation_id,),
             )
             messages = cur.fetchall()
@@ -700,7 +711,7 @@ async def rename_conversation(conversation_id: str, request: Request, data: Conv
     with connect() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "UPDATE conversations SET title=%s,updated_at=%s WHERE id=%s AND user_id=%s RETURNING id,title",
+                "UPDATE conversations SET title=?,updated_at=? WHERE id=? AND user_id=? RETURNING id,title",
                 (title, now_ts(), conversation_id, user["id"]),
             )
             row = cur.fetchone()
@@ -717,7 +728,7 @@ async def delete_conversation(conversation_id: str, request: Request):
         raise HTTPException(401, "Please sign in again.")
     with connect() as conn:
         with conn.cursor() as cur:
-            cur.execute("DELETE FROM conversations WHERE id=%s AND user_id=%s", (conversation_id, user["id"]))
+            cur.execute("DELETE FROM conversations WHERE id=? AND user_id=?", (conversation_id, user["id"]))
         conn.commit()
     return {"ok": True}
 
@@ -730,20 +741,20 @@ async def chat(request: Request, data: ChatRequest):
     with connect() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT id,title FROM conversations WHERE id=%s AND user_id=%s",
+                "SELECT id,title FROM conversations WHERE id=? AND user_id=?",
                 (data.conversationId, user["id"]),
             )
             convo = cur.fetchone()
             if not convo:
                 raise HTTPException(404, "Conversation not found.")
             day = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-            cur.execute("SELECT requests FROM daily_usage WHERE user_id=%s AND day=%s", (user["id"], day))
+            cur.execute("SELECT requests FROM daily_usage WHERE user_id=? AND day=?", (user["id"], day))
             usage = cur.fetchone()
             used = int(usage["requests"]) if usage else 0
             if used >= DAILY_LIMIT:
                 raise HTTPException(429, f"Daily beta limit reached ({DAILY_LIMIT} requests). Try tomorrow.")
             cur.execute(
-                "SELECT role,content FROM messages WHERE conversation_id=%s ORDER BY created_at DESC,id DESC LIMIT 12",
+                "SELECT role,content FROM messages WHERE conversation_id=? ORDER BY created_at DESC,id DESC LIMIT 12",
                 (data.conversationId,),
             )
             previous = list(reversed(cur.fetchall()))
@@ -761,7 +772,7 @@ async def chat(request: Request, data: ChatRequest):
         with conn.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO daily_usage(user_id,day,requests) VALUES(%s,%s,1)
+                INSERT INTO daily_usage(user_id,day,requests) VALUES(?,?,1)
                 ON CONFLICT(user_id,day) DO UPDATE SET requests=daily_usage.requests+1
                 RETURNING requests
                 """,
@@ -769,15 +780,15 @@ async def chat(request: Request, data: ChatRequest):
             )
             new_usage = int(cur.fetchone()["requests"])
             cur.execute(
-                "INSERT INTO messages(id,conversation_id,role,content,created_at) VALUES(%s,%s,'user',%s,%s)",
+                "INSERT INTO messages(id,conversation_id,role,content,created_at) VALUES(?,?,'user',?,?)",
                 (new_id(), data.conversationId, data.message.strip(), current),
             )
             cur.execute(
-                "INSERT INTO messages(id,conversation_id,role,content,created_at) VALUES(%s,%s,'model',%s,%s)",
+                "INSERT INTO messages(id,conversation_id,role,content,created_at) VALUES(?,?,'model',?,?)",
                 (new_id(), data.conversationId, generated["answer"], current + 1),
             )
             cur.execute(
-                "UPDATE conversations SET title=%s,updated_at=%s WHERE id=%s AND user_id=%s",
+                "UPDATE conversations SET title=?,updated_at=? WHERE id=? AND user_id=?",
                 (title, current, data.conversationId, user["id"]),
             )
         conn.commit()
@@ -848,7 +859,7 @@ async def create_agent_task(request: Request, data: AgentTaskCreate):
             cur.execute(
                 """
                 INSERT INTO agent_tasks(id,kind,title,prompt,status,model,source,requires_approval,created_by,created_at,updated_at)
-                VALUES(%s,%s,%s,%s,%s,%s,'manual',%s,%s,%s,%s)
+                VALUES(?,?,?,?,?,?,'manual',?,?,?,?)
                 """,
                 (
                     task_id, data.kind, data.title.strip()[:120], data.prompt.strip(), status, model,
@@ -865,7 +876,7 @@ async def approve_task(task_id: str, request: Request):
     with connect() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "UPDATE agent_tasks SET status='queued',approved_at=%s,updated_at=%s WHERE id=%s AND status='pending_approval'",
+                "UPDATE agent_tasks SET status='queued',approved_at=?,updated_at=? WHERE id=? AND status='pending_approval'",
                 (now_ts(), now_ts(), task_id),
             )
             changed = cur.rowcount
@@ -881,7 +892,7 @@ async def cancel_task(task_id: str, request: Request):
     with connect() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "UPDATE agent_tasks SET status='cancelled',updated_at=%s WHERE id=%s AND status IN ('pending_approval','queued')",
+                "UPDATE agent_tasks SET status='cancelled',updated_at=? WHERE id=? AND status IN ('pending_approval','queued')",
                 (now_ts(), task_id),
             )
             changed = cur.rowcount
@@ -909,7 +920,7 @@ async def patch_schedule(schedule_id: str, request: Request, data: SchedulePatch
     with connect() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT id,title,prompt,every_hours,enabled FROM agent_schedules WHERE id=%s",
+                "SELECT id,title,prompt,every_hours,enabled FROM agent_schedules WHERE id=?",
                 (schedule_id,),
             )
             current_row = cur.fetchone()
@@ -924,8 +935,8 @@ async def patch_schedule(schedule_id: str, request: Request, data: SchedulePatch
                 cur.execute(
                     """
                     UPDATE agent_schedules
-                    SET enabled=%s,title=%s,prompt=%s,every_hours=%s,next_run_at=%s,updated_at=%s
-                    WHERE id=%s
+                    SET enabled=?,title=?,prompt=?,every_hours=?,next_run_at=?,updated_at=?
+                    WHERE id=?
                     """,
                     (enabled, title, prompt, hours, next_run, now_ts(), schedule_id),
                 )
@@ -933,8 +944,8 @@ async def patch_schedule(schedule_id: str, request: Request, data: SchedulePatch
                 cur.execute(
                     """
                     UPDATE agent_schedules
-                    SET enabled=%s,title=%s,prompt=%s,every_hours=%s,updated_at=%s
-                    WHERE id=%s
+                    SET enabled=?,title=?,prompt=?,every_hours=?,updated_at=?
+                    WHERE id=?
                     """,
                     (enabled, title, prompt, hours, now_ts(), schedule_id),
                 )
