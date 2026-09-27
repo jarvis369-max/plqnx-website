@@ -1,6 +1,6 @@
 # PLQNX CORE + Agent OS
 
-PLQNX is now structured as a GitHub-hosted frontend with a Cloudflare backend and OpenAI-powered AI/agent layer.
+PLQNX is now structured as a GitHub-hosted frontend with a Cloudflare backend and Kie.ai-powered AI/agent layer.
 
 ## Public apps
 
@@ -24,9 +24,9 @@ Cloudflare Worker
   └─ 15-minute Cron Trigger
            │
            ▼
-OpenAI
-  ├─ Responses API -> PLQNX CORE chat
-  └─ Agents API -> durable startup-agent sessions
+Kie.ai
+  ├─ Astra Responses-compatible endpoint -> PLQNX CORE chat
+  └─ Cloudflare + D1 scheduler -> startup-agent tasks
        ├─ Chief
        ├─ Research
        ├─ Engineering
@@ -58,7 +58,7 @@ Enable those capabilities later only as explicit tools with separate approval ch
 
 ## Source files
 
-- `backend/agent-os.ts` — Cloudflare Worker / OpenAI integration
+- `backend/agent-os.ts` — Cloudflare Worker / Kie.ai integration
 - `backend/agent-os-schema.sql` — D1 task and schedule migration
 - `backend/wrangler.agent-os.toml` — Worker config and 15-minute cron
 - `backend/AGENT_OS_SETUP.md` — deployment instructions
@@ -69,12 +69,12 @@ Enable those capabilities later only as explicit tools with separate approval ch
 
 Never commit these values:
 
-- `OPENAI_API_KEY`
+- `KIE_API_KEY`
 - `BETA_ACCESS_CODE`
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`
 
-The Cloudflare Worker reads the OpenAI key only from an encrypted Worker secret. Browser code never receives it.
+The Cloudflare Worker reads the Kie.ai key only from an encrypted Worker secret. Browser code never receives it.
 
 ## Deploy from GitHub Actions
 
@@ -82,7 +82,7 @@ Add these repository secrets:
 
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`
-- `OPENAI_API_KEY`
+- `KIE_API_KEY`
 - `BETA_ACCESS_CODE`
 
 Then run the workflow **Deploy PLQNX Agent OS to Cloudflare**.
