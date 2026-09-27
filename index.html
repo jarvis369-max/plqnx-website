@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#07130f">
-  <meta name="description" content="PLQNX CORE is a fast text-first AI workspace powered by server-hosted open models.">
+  <meta name="description" content="PLQNX CORE is a fast text-first AI workspace powered by your locally installed Ollama models.">
   <meta name="application-name" content="PLQNX CORE">
   <title>PLQNX CORE | Text AI</title>
   <link rel="manifest" href="/manifest.webmanifest">
@@ -41,7 +41,7 @@
         <div class="panehead">
           <div>
             <h1>PLQNX Text</h1>
-            <p>Fast server-hosted chat. No browser model download, no warm-up screen.</p>
+            <p>Runs through the Ollama models already installed on this PC. No browser model download.</p>
           </div>
           <div class="capabilities">
             <span class="pill"><strong>●</strong> Chat</span>
@@ -55,7 +55,7 @@
           <div class="empty" id="emptyState">
             <div class="hero-orb">✦</div>
             <h3>Ask PLQNX anything.</h3>
-            <p>Text comes first. Chat, reason, write, explain, summarize and code using the two open models hosted on the PLQNX server.</p>
+            <p>Text comes first. Chat, reason, write, explain, summarize and code using your installed Qwen 2.5 0.5B and Llama 3.2 1B models.</p>
             <div class="featuregrid">
               <div class="feature"><b>Fast chat</b><span>Qwen 0.5B for lightweight everyday responses.</span></div>
               <div class="feature"><b>Deeper replies</b><span>Switch to Llama 1B when you want the larger model.</span></div>
@@ -73,7 +73,7 @@
             <button class="sendbtn" id="sendBtn" aria-label="Send">↑</button>
           </div>
           <div class="composerfoot">
-            <span id="modelFoot">PLQNX Fast · server model</span>
+            <span id="modelFoot">PLQNX Fast · local Ollama</span>
             <span>Enter to send · Shift+Enter for new line</span>
           </div>
         </div>
@@ -85,7 +85,7 @@
             <h2>Output canvas</h2>
             <p>Formatted answers, extracted code and runnable HTML.</p>
           </div>
-          <span class="pill">Server-hosted</span>
+          <span class="pill">Local Ollama</span>
         </div>
 
         <div class="tabs">
