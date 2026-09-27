@@ -1,0 +1,113 @@
+name: Deploy PLQNX Agent OS to Cloudflare
+
+on:
+  workflow_dispatch:
+    inputs:
+      admin_username:
+        description: "Existing PLQNX username allowed to control Agent OS"
+        required: true
+        type: string
+      enable_automation:
+        description: "Enable scheduled agent starts immediately"
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Install Wrangler
+        run: npm install --global wrangler@4
+
+      - name: Resolve existing PLQNX D1 database
+        id: d1
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          wrangler d1 list --json > /tmp/d1.json
+          D1_ID="$(jq -r '.[] | select(.name=="plqnx-core-db") | (.uuid // .id)' /tmp/d1.json | head -n1)"
+          if [ -z "$D1_ID" ] || [ "$D1_ID" = "null" ]; then
+            echo "Could not find existing D1 database named plqnx-core-db."
+            exit 1
+          fi
+          echo "d1_id=$D1_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare deployment config
+        env:
+          D1_ID: ${{ steps.d1.outputs.d1_id }}
+          ADMIN_USERNAME: ${{ inputs.admin_username }}
+          ENABLE_AUTOMATION: ${{ inputs.enable_automation }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import os
+          path = Path("backend/wrangler.agent-os.toml")
+          text = path.read_text()
+          text = text.replace("REPLACE_WITH_EXISTING_D1_DATABASE_ID", os.environ["D1_ID"])
+          text = text.replace("REPLACE_WITH_PLQNX_USERNAME", os.environ["ADMIN_USERNAME"])
+          if os.environ["ENABLE_AUTOMATION"].lower() == "true":
+              text = text.replace('AGENT_AUTOMATION_ENABLED = "false"', 'AGENT_AUTOMATION_ENABLED = "true"')
+          path.write_text(text)
+          PY
+
+      - name: Apply idempotent D1 migrations
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          wrangler d1 execute plqnx-core-db --remote --file backend/schema.sql --config backend/wrangler.agent-os.toml
+          wrangler d1 execute plqnx-core-db --remote --file backend/security-v4.sql --config backend/wrangler.agent-os.toml
+          wrangler d1 execute plqnx-core-db --remote --file backend/agent-os-schema.sql --config backend/wrangler.agent-os.toml
+
+      - name: Deploy Agent OS Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: wrangler deploy --config backend/wrangler.agent-os.toml
+
+      - name: Configure OpenAI secret
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$OPENAI_API_KEY"
+          printf '%s' "$OPENAI_API_KEY" | wrangler secret put OPENAI_API_KEY --config backend/wrangler.agent-os.toml
+
+      - name: Configure beta access secret
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          BETA_ACCESS_CODE: ${{ secrets.BETA_ACCESS_CODE }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$BETA_ACCESS_CODE"
+          printf '%s' "$BETA_ACCESS_CODE" | wrangler secret put BETA_ACCESS_CODE --config backend/wrangler.agent-os.toml
+
+      - name: Deployment summary
+        run: |
+          echo "PLQNX Agent OS deployed."
+          echo "Frontend: https://jarvis369-max.github.io/plqnx-website/"
+          echo "Dashboard: https://jarvis369-max.github.io/plqnx-website/agent.html"
