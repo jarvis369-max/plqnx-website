@@ -15,12 +15,12 @@ MODELS = {
     "qwen-fast": {
         "ollama": "R4C3R/qwen2.5-0.5b-heretic",
         "label": "PLQNX Fast · Qwen 0.5B",
-        "context": 8192,
+        "context": 4096,
     },
     "llama-1b": {
         "ollama": "huihui_ai/llama3.2-abliterate:1b",
         "label": "PLQNX Plus · Llama 1B",
-        "context": 8192,
+        "context": 4096,
     },
 }
 
@@ -34,7 +34,7 @@ self-harm, credential theft, malware deployment, or other clearly harmful activi
 
 app = FastAPI(
     title="PLQNX CORE",
-    version="5.3.0",
+    version="5.4.0",
     description="Text-first PLQNX AI powered by locally installed Ollama models.",
 )
 
@@ -98,7 +98,7 @@ def ollama_payload(request: ChatRequest, stream: bool):
             {"role": "user", "content": request.message},
         ],
         "stream": stream,
-        "keep_alive": "30m",
+        "keep_alive": "5m",
         "options": {
             "temperature": 0.65,
             "top_p": 0.9,
@@ -256,7 +256,7 @@ async def health():
 
     return {
         "ok": True,
-        "version": "5.3.0",
+        "version": "5.4.0",
         "runtime": "local-ollama-text-first",
         "chat_endpoint": "/api/chat/stream",
         "models": [value["ollama"] for value in MODELS.values()],
