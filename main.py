@@ -33,8 +33,8 @@ self-harm, credential theft, malware deployment, or other clearly harmful activi
 
 app = FastAPI(
     title="PLQNX CORE",
-    version="5.0.0",
-    description="Text-first PLQNX AI powered by server-hosted Ollama models.",
+    version="5.1.0",
+    description="Text-first PLQNX AI powered by locally installed Ollama models.",
 )
 
 
@@ -237,8 +237,8 @@ async def health():
 
     return {
         "ok": True,
-        "version": "5.0.0",
-        "runtime": "ollama-text-first",
+        "version": "5.1.0",
+        "runtime": "local-ollama-text-first",
         "chat_endpoint": "/api/chat/stream",
         "models": [value["ollama"] for value in MODELS.values()],
     }
