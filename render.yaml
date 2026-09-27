@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: plqnx-core
+    runtime: docker
+    repo: https://github.com/jarvis369-max/plqnx-website
+    branch: main
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: OLLAMA_HOST
+        value: 127.0.0.1:11434
