@@ -33,7 +33,8 @@ The launcher:
 - creates a local Python virtual environment
 - installs the FastAPI dependencies
 - warms the Qwen model
-- opens PLQNX at `http://127.0.0.1:3000`
+- starts the local AI bridge at `http://127.0.0.1:3000`
+- opens the public frontend at `https://jarvis369-max.github.io/plqnx-website/`
 
 Keep the launcher window open while using PLQNX.
 
@@ -80,6 +81,12 @@ Version 5 focuses on:
 - model switching
 
 Voice and vision are intentionally postponed until the text experience is stable.
+
+## Public URL
+
+`https://jarvis369-max.github.io/plqnx-website/`
+
+The GitHub Pages frontend is public. To use the two models on your own Windows PC, run `RUN-PLQNX.bat` so the page can connect to the local PLQNX/Ollama bridge.
 
 ## Important publishing note
 
