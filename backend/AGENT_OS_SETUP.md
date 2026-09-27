@@ -1,14 +1,14 @@
 # PLQNX Agent OS setup
 
-PLQNX Agent OS keeps the existing PLQNX CORE UI, accounts, saved conversations and animations, but replaces the AI layer with OpenAI and adds scheduled managed agents.
+PLQNX Agent OS keeps the existing PLQNX CORE UI, accounts, saved conversations and animations, but replaces the AI layer with Kie.ai and adds scheduled managed agents.
 
 ## What is implemented
 
-- PLQNX CORE chat -> OpenAI Responses API
+- PLQNX CORE chat -> Kie.ai Responses-compatible API
 - Default chat model -> gpt-6-astra
 - Chief/research/engineering agents -> gpt-6-astra
 - Lower-cost operations/growth/support/brief agents -> gpt-6-sol
-- OpenAI Agents API sessions for durable agent work
+- D1-backed scheduled agent tasks powered by Kie.ai
 - D1 task queue, task history and schedules
 - Human approval state for manually created tasks
 - Cloudflare Cron handler for 24/7 wake-ups
@@ -17,7 +17,7 @@ PLQNX Agent OS keeps the existing PLQNX CORE UI, accounts, saved conversations a
 
 ## Important cost safety
 
-Automation is committed with AGENT_AUTOMATION_ENABLED=false. This prevents scheduled API spending until you deliberately enable it after checking your OpenAI billing limits.
+Automation is committed with AGENT_AUTOMATION_ENABLED=false. This prevents scheduled API spending until you deliberately enable it after checking your Kie.ai billing limits.
 
 ## 1. Database migration
 
@@ -39,7 +39,7 @@ DB
 
 Set these encrypted Worker secrets:
 
-OPENAI_API_KEY
+KIE_API_KEY
 BETA_ACCESS_CODE
 
 Never place either secret in GitHub, HTML, browser JavaScript, or chat messages.
@@ -54,7 +54,7 @@ AGENT_ADMIN_USER=YOUR_PLQNX_USERNAME
 AGENT_AUTOMATION_ENABLED=false
 AGENT_MAX_STARTS_PER_TICK=1
 
-The OpenAI API key needs permissions for the Agents API session operations and Responses inference.
+The Kie.ai API key needs permissions for the Agents API session operations and Responses inference.
 
 ## 3. Cron
 
@@ -76,7 +76,7 @@ Create one task with approval enabled, approve it, then press Run queue. The das
 
 ## 5. Enable 24/7 schedules
 
-After one manual task succeeds and you have set an OpenAI budget/usage alert, change:
+After one manual task succeeds and you have set an Kie.ai budget/usage alert, change:
 
 AGENT_AUTOMATION_ENABLED=true
 
@@ -86,4 +86,4 @@ The default schedule rows are disabled. This is intentional so cloning/deploying
 
 ## Approval boundary
 
-The first Agent OS version can research, reason, draft, review and produce code or plans inside OpenAI managed sessions. It does not send email, publish content, spend money, merge production code, change credentials or delete external data. Those actions should be added later as explicit tools with separate approval gates.
+The first Agent OS version can research, reason, draft, review and produce code or plans inside Kie.ai managed sessions. It does not send email, publish content, spend money, merge production code, change credentials or delete external data. Those actions should be added later as explicit tools with separate approval gates.
