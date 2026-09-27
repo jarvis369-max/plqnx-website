@@ -1,115 +1,92 @@
-# PLQNX CORE — Text-first local AI
+# PLQNX CORE + Agent OS
 
-PLQNX CORE now focuses on fast text chat first.
+PLQNX is now structured as a GitHub-hosted frontend with a Cloudflare backend and OpenAI-powered AI/agent layer.
 
-It uses the Ollama models already installed on the Windows machine:
+## Public apps
 
-- `R4C3R/qwen2.5-0.5b-heretic`
-- `huihui_ai/llama3.2-abliterate:1b`
+- CORE: https://jarvis369-max.github.io/plqnx-website/
+- Agent OS: https://jarvis369-max.github.io/plqnx-website/agent.html
 
-No browser model download is required. The website talks to the local Ollama service through the PLQNX FastAPI backend.
+The restored PLQNX CORE warm fluid UI, animations, saved conversations, loading state and account experience stay intact.
 
-## Windows quick start
-
-1. Install/open Ollama for Windows.
-2. Confirm the models exist:
-
-```powershell
-ollama list
-```
-
-3. Clone or download this GitHub repository.
-4. Double-click:
+## Architecture
 
 ```text
-RUN-PLQNX.bat
+GitHub Pages
+  ├─ PLQNX CORE chat
+  └─ Agent OS founder dashboard
+           │
+           ▼
+Cloudflare Worker
+  ├─ auth + rate limits
+  ├─ D1 conversations
+  ├─ D1 agent queue
+  └─ hourly Cron Trigger
+           │
+           ▼
+OpenAI
+  ├─ Responses API -> PLQNX CORE chat
+  └─ Agents API -> durable startup-agent sessions
+       ├─ Chief
+       ├─ Research
+       ├─ Engineering
+       ├─ Operations
+       ├─ Growth
+       ├─ Support
+       └─ Founder brief
 ```
 
-The launcher:
+## Model defaults
 
-- verifies Ollama is available
-- starts Ollama if necessary
-- verifies both PLQNX models are installed
-- creates a local Python virtual environment
-- installs the FastAPI dependencies
-- warms the Qwen model
-- starts the local AI bridge at `http://127.0.0.1:3000`
-- opens the public frontend at `https://jarvis369-max.github.io/plqnx-website/`
+- CORE chat: `gpt-6-astra`
+- Chief / Research / Engineering: `gpt-6-astra`
+- Operations / Growth / Support / Brief: `gpt-6-sol`
 
-Keep the launcher window open while using PLQNX.
+All model IDs are configurable as Cloudflare Worker variables.
 
-## Manual start
+## Cost and action guardrails
 
-```powershell
-ollama list
-py -3 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-$env:OLLAMA_URL="http://127.0.0.1:11434"
-.\.venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 3000
-```
-
-Then open:
+Scheduled automation is disabled by default.
 
 ```text
-http://127.0.0.1:3000
+AGENT_AUTOMATION_ENABLED=false
 ```
 
-## Text models
+Manual tasks default to founder approval before execution. Agent OS v1 does not have tools that spend money, publish externally, send email, merge production code, rotate credentials, or delete external data.
 
-### PLQNX Fast
-`R4C3R/qwen2.5-0.5b-heretic`
+Enable those capabilities later only as explicit tools with separate approval checks.
 
-Used as the default lightweight model.
+## Source files
 
-### PLQNX Plus
-`huihui_ai/llama3.2-abliterate:1b`
+- `backend/agent-os.ts` — Cloudflare Worker / OpenAI integration
+- `backend/agent-os-schema.sql` — D1 task and schedule migration
+- `backend/wrangler.agent-os.toml` — Worker config and hourly cron
+- `backend/AGENT_OS_SETUP.md` — deployment instructions
+- `agent.html` — founder dashboard
+- `.github/workflows/deploy-agent-os.yml` — manual GitHub Actions deployment
 
-Available from the model selector for the larger local option.
+## Secrets
 
-## Current focus
+Never commit these values:
 
-Version 5 focuses on:
+- `OPENAI_API_KEY`
+- `BETA_ACCESS_CODE`
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
 
-- text chat
-- streaming responses
-- coding
-- writing
-- summarization
-- multilingual conversation
-- conversation history
-- Markdown/code rendering
-- model switching
+The Cloudflare Worker reads the OpenAI key only from an encrypted Worker secret. Browser code never receives it.
 
-Voice and vision are intentionally postponed until the text experience is stable.
+## Deploy from GitHub Actions
 
-## Public URL
+Add these repository secrets:
 
-`https://jarvis369-max.github.io/plqnx-website/`
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+- `OPENAI_API_KEY`
+- `BETA_ACCESS_CODE`
 
-The GitHub Pages frontend is public. To use the two models on your own Windows PC, run `RUN-PLQNX.bat` so the page can connect to the local PLQNX/Ollama bridge.
+Then run the workflow **Deploy PLQNX Agent OS to Cloudflare**.
 
-## Production deployment
+It asks for your existing PLQNX username and whether to enable automation. Leave automation off for the first deployment, verify one manual task, set an API budget, then enable only the schedules you need.
 
-The preferred low-cost production path is Oracle Cloud:
-
-```text
-GitHub Pages frontend
-        ↓
-Oracle Cloud VM
-        ↓
-Nginx + FastAPI
-        ↓
-Ollama
-  ↙             ↘
-Qwen 0.5B     Llama 1B
-```
-
-Deployment files are in:
-
-```text
-deploy/oracle/
-```
-
-Start with `deploy/oracle/README.md`.
-
-The model weights stay on the Oracle VM, not in GitHub. Once the VM and HTTPS API are online, the GitHub Pages frontend can be pointed at that public backend so PLQNX works while the founder's PC is off.
+See `backend/AGENT_OS_SETUP.md` for the full safe setup.
