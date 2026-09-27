@@ -1,6 +1,6 @@
 const MODEL_LABELS = {
-  "qwen-fast": "PLQNX Fast · Qwen 0.5B",
-  "llama-1b": "PLQNX Plus · Llama 1B",
+  "qwen-fast": "PLQNX Fast · Qwen 2.5 0.5B",
+  "llama-1b": "PLQNX Plus · Llama 3.2 1B",
 };
 
 const els = {
@@ -175,7 +175,7 @@ async function runChat(rawMessage) {
 
     const meta = document.createElement("div");
     meta.className = "msgmeta";
-    meta.textContent = `${label} · server Ollama`;
+    meta.textContent = `${label} · local Ollama`;
     pending.wrap.appendChild(meta);
   } catch (error) {
     console.error(error);
@@ -206,6 +206,29 @@ function restoreHistory() {
   if (last) renderOutput(last.content);
 }
 
+async function loadAvailableModels() {
+  try {
+    const response = await fetch("/api/models", { cache: "no-store" });
+    if (!response.ok) return;
+    const data = await response.json();
+    if (!Array.isArray(data.models) || !data.models.length) return;
+
+    const current = selectedModel();
+    els.modelSelect.innerHTML = "";
+    for (const item of data.models) {
+      MODEL_LABELS[item.id] = item.label;
+      const option = document.createElement("option");
+      option.value = item.id;
+      option.textContent = item.label;
+      if (item.id === current || (!current && item.id === data.default)) option.selected = true;
+      els.modelSelect.appendChild(option);
+    }
+
+    if (!els.modelSelect.value && data.default) els.modelSelect.value = data.default;
+    els.modelFoot.textContent = `${MODEL_LABELS[selectedModel()]} · local Ollama`;
+  } catch {}
+}
+
 async function checkHealth() {
   try {
     const response = await fetch("/api/ai-health", { cache: "no-store" });
@@ -215,7 +238,7 @@ async function checkHealth() {
       return true;
     }
   } catch {}
-  setStatus("Models starting…", true);
+  setStatus("Local Ollama not ready", true);
   return false;
 }
 
@@ -235,7 +258,7 @@ els.prompt.addEventListener("input", () => {
 
 els.modelSelect.addEventListener("change", () => {
   const label = MODEL_LABELS[selectedModel()];
-  els.modelFoot.textContent = `${label} · server model`;
+  els.modelFoot.textContent = `${label} · local Ollama`;
   setStatus(`${label} · ready`);
 });
 
@@ -245,7 +268,8 @@ document.querySelectorAll("[data-tab]").forEach((button) => {
 
 restoreHistory();
 renderOutput("");
-els.modelFoot.textContent = `${MODEL_LABELS[selectedModel()]} · server model`;
+await loadAvailableModels();
+els.modelFoot.textContent = `${MODEL_LABELS[selectedModel()]} · local Ollama`;
 setStatus(`${MODEL_LABELS[selectedModel()]} · ready`);
 checkHealth().then((ok) => {
   if (!ok) {
