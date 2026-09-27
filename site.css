@@ -211,3 +211,8 @@ textarea::placeholder{color:#648576}
   .canvasbody{padding:8px}.previewcard{padding:14px}.runframe{min-height:420px}
 }
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+
+
+/* PLQNX v5 text-only composer */
+.composerbox.text-only{grid-template-columns:1fr auto}
+.composerbox.text-only>div{min-width:0}
