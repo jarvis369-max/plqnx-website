@@ -60,9 +60,9 @@ The OpenAI API key needs permissions for the Agents API session operations and R
 
 Configure one Cron Trigger:
 
-0 * * * *
+*/15 * * * *
 
-The Worker wakes hourly. It polls running managed-agent sessions. When automation is enabled it also queues due schedules and starts a small number of queued tasks.
+The Worker wakes every 15 minutes. It polls running managed-agent sessions. When automation is enabled it also queues due schedules and starts a small number of queued tasks.
 
 ## 4. First test
 
