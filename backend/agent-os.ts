@@ -169,20 +169,22 @@ async function kieResponse(
   history: Array<{ role: string; content: string }> = [],
   useWebSearch = false
 ) {
-  const input = [
-    {
-      role: "user",
-      content: [{ type: "input_text", text: prompt }]
-    },
-    ...history.map(message => ({
-      role: message.role === "model" ? "assistant" : "user",
-      content: [{ type: "input_text", text: message.content }]
-    }))
-  ];
+  // The instruction is not a user turn. Keep conversation turns in chronological order
+  // and use the Responses API's output_text type for prior assistant messages.
+  const input = history.length
+    ? history.map(message => ({
+        role: message.role === "model" ? "assistant" : "user",
+        content: [{
+          type: message.role === "model" ? "output_text" : "input_text",
+          text: message.content
+        }]
+      }))
+    : [{ role: "user", content: [{ type: "input_text", text: prompt }] }];
   const body: any = {
     model,
     stream: false,
     input,
+    ...(history.length ? { instructions: prompt } : {}),
     reasoning: { effort: model === "gpt-6-astra" ? "high" : "medium" }
   };
   if (useWebSearch) body.tools = [{ type: "web_search" }];
