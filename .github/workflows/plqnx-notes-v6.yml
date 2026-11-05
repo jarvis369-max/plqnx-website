@@ -1,0 +1,71 @@
+name: Plqnx notes Android verified build
+on:
+  push:
+    branches: [plqnx-notes-v6-softlight]
+  workflow_dispatch:
+jobs:
+  verify-and-build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore Android source
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 -d android/PLQNX_NOTES_V6_source.tar.xz.b64 > /tmp/plqnx-notes.tar.xz
+          xz -t /tmp/plqnx-notes.tar.xz
+          mkdir -p /tmp/plqnx-android
+          tar -xJf /tmp/plqnx-notes.tar.xz -C /tmp/plqnx-android
+          test -f /tmp/plqnx-android/PLQNX_NOTES_V6/app/src/main/java/com/plqnx/notes/CalmHome.java
+          test -f /tmp/plqnx-android/PLQNX_NOTES_V6/app/src/main/java/com/plqnx/notes/EncryptedBackup.java
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: ''
+      - name: Install Android API 36
+        run: |
+          echo "y" | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Compile application and run Android lint
+        working-directory: /tmp/plqnx-android/PLQNX_NOTES_V6
+        run: |
+          gradle --no-daemon --stacktrace assembleDebug bundleRelease lintDebug
+      - name: Verify APK package, version, permissions and bundle
+        shell: bash
+        working-directory: /tmp/plqnx-android/PLQNX_NOTES_V6
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          BUNDLE=app/build/outputs/bundle/release/app-release.aab
+          test -s "$APK"
+          test -s "$BUNDLE"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | tee /tmp/plqnx_badging.txt
+          grep -q "name='com.plqnx.notes'" /tmp/plqnx_badging.txt
+          grep -q "versionCode='7'" /tmp/plqnx_badging.txt
+          grep -q "application-label:'Plqnx notes'" /tmp/plqnx_badging.txt
+          ! grep -q "android.permission.INTERNET" /tmp/plqnx_badging.txt
+          jarsigner -verify -certs "$APK"
+          unzip -t "$APK" | tail -n 2
+      - name: Upload installable test APK and release bundle
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: plqnx-notes-softlight-build
+          path: |
+            /tmp/plqnx-android/PLQNX_NOTES_V6/app/build/outputs/apk/debug/*.apk
+            /tmp/plqnx-android/PLQNX_NOTES_V6/app/build/outputs/bundle/release/*.aab
+            /tmp/plqnx-android/PLQNX_NOTES_V6/app/build/reports/lint-results-debug.html
+          if-no-files-found: error
+      - name: Print Android lint if unsuccessful
+        if: failure()
+        working-directory: /tmp/plqnx-android/PLQNX_NOTES_V6
+        run: |
+          if [ -f app/build/reports/lint-results-debug.txt ]; then head -c 15000 app/build/reports/lint-results-debug.txt; fi
