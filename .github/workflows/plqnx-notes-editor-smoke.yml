@@ -1,0 +1,80 @@
+name: PLQNX Notes editor crash reproduction
+on:
+  push:
+    branches: [plqnx-notes-editor-crash-fix]
+  workflow_dispatch:
+jobs:
+  reproduce-crash:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore source
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 -d android/PLQNX_NOTES_V6_source.tar.xz.b64 > /tmp/plqnx.tar.xz
+          mkdir -p /tmp/plqnx-test
+          tar -xJf /tmp/plqnx.tar.xz -C /tmp/plqnx-test
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: ''
+      - name: Install SDK and Gradle
+        run: |
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Compile debug app
+        working-directory: /tmp/plqnx-test/PLQNX_NOTES_V6
+        run: gradle --no-daemon assembleDebug
+      - name: Start Android and reproduce + button
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          disable-animations: true
+          script: |
+            set -eux
+            adb install /tmp/plqnx-test/PLQNX_NOTES_V6/app/build/outputs/apk/debug/app-debug.apk
+            adb shell am start -n com.plqnx.notes/.MainActivity
+            sleep 4
+            adb shell uiautomator dump /sdcard/window.xml
+            adb shell cat /sdcard/window.xml > /tmp/window.xml
+            python3 - <<'PY'
+            import xml.etree.ElementTree as ET, re, subprocess
+            root=ET.parse("/tmp/window.xml").getroot()
+            elements=root.iter("node")
+            for n in elements:
+                print("UI",n.get('text'),n.get('content-desc'),n.get('bounds'))
+            candidates=[n for n in root.iter("node") if n.get("text","").strip() in ("＋","＋  Write something","+","New note") or "Write something" in n.get("text","")]
+            assert candidates, "Could not locate add-note button in UI XML"
+            n=candidates[0]; b=re.findall(r'\d+',n.get("bounds",""))
+            x=(int(b[0])+int(b[2]))//2; y=(int(b[1])+int(b[3]))//2
+            subprocess.check_call(["adb","logcat","-c"])
+            print("TAPPING",x,y,n.get("text"))
+            subprocess.check_call(["adb","shell","input","tap",str(x),str(y)])
+            PY
+            sleep 4
+            adb logcat -d -s AndroidRuntime:E > /tmp/plqnx-crash.log
+            echo "---- ANDROID RUNTIME LOG ----"
+            cat /tmp/plqnx-crash.log
+            adb shell uiautomator dump /sdcard/after.xml || true
+            adb shell cat /sdcard/after.xml > /tmp/after.xml || true
+            if grep -q "FATAL EXCEPTION" /tmp/plqnx-crash.log; then exit 13; fi
+            grep -Ei "Name this idea|Your next extraordinary thought|WRITER" /tmp/after.xml
+      - name: Upload logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: plqnx-editor-diagnostics
+          path: |
+            /tmp/plqnx-crash.log
+            /tmp/window.xml
+            /tmp/after.xml
