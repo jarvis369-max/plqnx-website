@@ -1,0 +1,64 @@
+name: PLQNX NOTES 5 Motion build
+on:
+  push:
+    branches: [plqnx-notes-v5-motion]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify motion edition project archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 -d android/PLQNX_NOTES_v5_src.tar.xz.b64 > /tmp/plqnx-v5.tar.xz
+          xz -t /tmp/plqnx-v5.tar.xz
+          mkdir -p /tmp/android-v5
+          tar -xJf /tmp/plqnx-v5.tar.xz -C /tmp/android-v5
+          test -f /tmp/android-v5/PLQNX_NOTES_V5/app/src/main/java/com/plqnx/notes/MotionSystem.java
+          test -f /tmp/android-v5/PLQNX_NOTES_V5/app/build.gradle
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: ''
+      - name: Install Android SDK 36
+        run: |
+          echo "y" | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Compile, lint, and package PLQNX NOTES V5
+        working-directory: /tmp/android-v5/PLQNX_NOTES_V5
+        run: |
+          gradle --no-daemon --stacktrace assembleDebug bundleRelease lintDebug
+      - name: Verify package ID, release metadata, and outputs
+        working-directory: /tmp/android-v5/PLQNX_NOTES_V5
+        run: |
+          set -euo pipefail
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          test -s app/build/outputs/bundle/release/app-release.aab
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging app/build/outputs/apk/debug/app-debug.apk | grep -E '^(package:|sdkVersion:|targetSdkVersion:|application-label:)'
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging app/build/outputs/apk/debug/app-debug.apk | grep -q "name='com.plqnx.notes'"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging app/build/outputs/apk/debug/app-debug.apk | grep -q "versionCode='6'"
+      - name: Upload APK, unsigned AAB, lint report
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: PLQNX_NOTES_5_0_Motion
+          path: |
+            /tmp/android-v5/PLQNX_NOTES_V5/app/build/outputs/apk/debug/*.apk
+            /tmp/android-v5/PLQNX_NOTES_V5/app/build/outputs/bundle/release/*.aab
+            /tmp/android-v5/PLQNX_NOTES_V5/app/build/reports/lint-results-debug.html
+          if-no-files-found: error
+      - name: Lint failures
+        if: failure()
+        working-directory: /tmp/android-v5/PLQNX_NOTES_V5
+        run: |
+          if [ -f app/build/reports/lint-results-debug.txt ]; then cat app/build/reports/lint-results-debug.txt; fi
