@@ -1,0 +1,63 @@
+name: Plqnx notes editor hotfix APK
+on:
+  push:
+    branches: [plqnx-notes-editor-crash-fix]
+  workflow_dispatch:
+jobs:
+  compile-and-package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify and restore fixed Android source
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 -d android/PLQNX_NOTES_V6_HOTFIX_source.tar.xz.b64 > /tmp/plqnx-fix.tar.xz
+          xz -t /tmp/plqnx-fix.tar.xz
+          mkdir -p /tmp/plqnx-fix-src
+          tar -xJf /tmp/plqnx-fix.tar.xz -C /tmp/plqnx-fix-src
+          grep -q "private void openSafeWriter" /tmp/plqnx-fix-src/PLQNX_NOTES_V6/app/src/main/java/com/plqnx/notes/MainActivity.java
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: ''
+      - name: Android 16 SDK
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Build APK, bundle and lint
+        working-directory: /tmp/plqnx-fix-src/PLQNX_NOTES_V6
+        run: gradle --no-daemon --stacktrace assembleDebug bundleRelease lintDebug
+      - name: Verify APK package and version
+        working-directory: /tmp/plqnx-fix-src/PLQNX_NOTES_V6
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk=app/build/outputs/apk/debug/app-debug.apk
+          test -s "$apk"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" | tee /tmp/plqnx-hotfix-badging.txt
+          grep -q "name='com.plqnx.notes'" /tmp/plqnx-hotfix-badging.txt
+          grep -q "versionCode='8'" /tmp/plqnx-hotfix-badging.txt
+          grep -q "application-label:'Plqnx notes'" /tmp/plqnx-hotfix-badging.txt
+          ! grep -q "android.permission.INTERNET" /tmp/plqnx-hotfix-badging.txt
+          jarsigner -verify "$apk"
+          unzip -t "$apk" | tail -n 2
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: plqnx-notes-editor-hotfix-apk
+          path: |
+            /tmp/plqnx-fix-src/PLQNX_NOTES_V6/app/build/outputs/apk/debug/app-debug.apk
+            /tmp/plqnx-fix-src/PLQNX_NOTES_V6/app/build/outputs/bundle/release/app-release.aab
+            /tmp/plqnx-fix-src/PLQNX_NOTES_V6/app/build/reports/lint-results-debug.html
+          if-no-files-found: error
+      - name: Show errors if failed
+        if: failure()
+        working-directory: /tmp/plqnx-fix-src/PLQNX_NOTES_V6
+        run: |
+          if [ -f app/build/reports/lint-results-debug.txt ]; then head -c 16000 app/build/reports/lint-results-debug.txt; fi
