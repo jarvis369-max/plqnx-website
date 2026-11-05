@@ -1,0 +1,60 @@
+name: PLQNX NOTES Seasons 3.1 Android build
+on:
+  push:
+    branches: [plqnx-notes-seasons-v31]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract verified Seasons Android source
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 -d android/PLQNX_NOTES_SEASONS_src.tar.xz.b64 > /tmp/plqnx-seasons.tar.xz
+          xz -t /tmp/plqnx-seasons.tar.xz
+          mkdir -p /tmp/android-seasons
+          tar -xJf /tmp/plqnx-seasons.tar.xz -C /tmp/android-seasons
+          test -f /tmp/android-seasons/PLQNX_NOTES_SEASONS/app/build.gradle
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: ''
+      - name: Install Android SDK 36
+        run: |
+          echo "y" | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Compile and check Android lint
+        working-directory: /tmp/android-seasons/PLQNX_NOTES_SEASONS
+        run: gradle --no-daemon --stacktrace assembleDebug bundleRelease lintDebug
+      - name: Verify APK metadata
+        shell: bash
+        run: |
+          APK=/tmp/android-seasons/PLQNX_NOTES_SEASONS/app/build/outputs/apk/debug/app-debug.apk
+          AAB=/tmp/android-seasons/PLQNX_NOTES_SEASONS/app/build/outputs/bundle/release/app-release.aab
+          test -s "$APK" && test -s "$AAB"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -E '^(package:|sdkVersion:|targetSdkVersion:|application-label:)'
+      - name: Upload APK, AAB, and lint report
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: PLQNX_NOTES_Seasons_3_1
+          path: |
+            /tmp/android-seasons/PLQNX_NOTES_SEASONS/app/build/outputs/apk/debug/*.apk
+            /tmp/android-seasons/PLQNX_NOTES_SEASONS/app/build/outputs/bundle/release/*.aab
+            /tmp/android-seasons/PLQNX_NOTES_SEASONS/app/build/reports/lint-results-debug.html
+          if-no-files-found: error
+      - name: Show lint details on failure
+        if: failure()
+        working-directory: /tmp/android-seasons/PLQNX_NOTES_SEASONS
+        run: |
+          if test -f app/build/reports/lint-results-debug.txt; then cat app/build/reports/lint-results-debug.txt; fi
