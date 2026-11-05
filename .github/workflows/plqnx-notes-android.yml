@@ -1,0 +1,40 @@
+name: PLQNX Notes Android build
+on:
+  push:
+    branches: [plqnx-notes-android]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Decode Android project
+        shell: bash
+        run: |
+          base64 -d android/PLQNX_NOTES_build_src.tar.xz.b64 > /tmp/plqnx.tar.xz
+          mkdir -p /tmp/android-src
+          tar -xJf /tmp/plqnx.tar.xz -C /tmp/android-src
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install SDK 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Build installable APK and unsigned release bundle
+        working-directory: /tmp/android-src/PLQNX_NOTES
+        run: |
+          gradle --no-daemon --stacktrace assembleDebug bundleRelease
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: plqnx-notes-build
+          path: |
+            /tmp/android-src/PLQNX_NOTES/app/build/outputs/apk/debug/*.apk
+            /tmp/android-src/PLQNX_NOTES/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
