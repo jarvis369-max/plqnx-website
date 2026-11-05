@@ -1,0 +1,64 @@
+name: PLQNX NOTES Atlas 4.0 Android build
+on:
+  push:
+    branches: [plqnx-notes-v4-atlas]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract PLQNX NOTES V4 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 -d android/PLQNX_NOTES_v4_src.tar.xz.b64 > /tmp/plqnx-v4.tar.xz
+          xz -t /tmp/plqnx-v4.tar.xz
+          mkdir -p /tmp/plqnx-v4
+          tar -xJf /tmp/plqnx-v4.tar.xz -C /tmp/plqnx-v4
+          test -f /tmp/plqnx-v4/PLQNX_NOTES_V4/app/build.gradle
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: ''
+      - name: Install Android 16 SDK
+        run: |
+          echo "y" | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Compile APK, AAB and run Android lint
+        working-directory: /tmp/plqnx-v4/PLQNX_NOTES_V4
+        run: gradle --no-daemon --stacktrace assembleDebug bundleRelease lintDebug
+      - name: Verify APK manifest and archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=/tmp/plqnx-v4/PLQNX_NOTES_V4/app/build/outputs/apk/debug/app-debug.apk
+          AAB=/tmp/plqnx-v4/PLQNX_NOTES_V4/app/build/outputs/bundle/release/app-release.aab
+          test -s "$APK"
+          test -s "$AAB"
+          unzip -t "$APK" | tail -1
+          unzip -t "$AAB" | tail -1
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -E '^(package:|sdkVersion:|targetSdkVersion:|application-label:)'
+      - name: Upload test package
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: PLQNX_NOTES_Atlas_4.0_ANDROID
+          path: |
+            /tmp/plqnx-v4/PLQNX_NOTES_V4/app/build/outputs/apk/debug/*.apk
+            /tmp/plqnx-v4/PLQNX_NOTES_V4/app/build/outputs/bundle/release/*.aab
+            /tmp/plqnx-v4/PLQNX_NOTES_V4/app/build/reports/lint-results-debug.html
+          if-no-files-found: error
+      - name: Show lint diagnostics on failure
+        if: failure()
+        working-directory: /tmp/plqnx-v4/PLQNX_NOTES_V4
+        run: |
+          if [ -f app/build/reports/lint-results-debug.txt ]; then cat app/build/reports/lint-results-debug.txt; fi
