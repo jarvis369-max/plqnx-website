@@ -1,0 +1,64 @@
+name: Plqnx notes adaptive Android build
+on:
+  push:
+    branches: [plqnx-notes-adaptive-keep]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore and verify Android sources
+        run: |
+          set -euo pipefail
+          base64 -d android/Plqnx_notes_Adaptive_Keep_Source.tar.xz.b64 > /tmp/plqnx-notes.tar.xz
+          xz -t /tmp/plqnx-notes.tar.xz
+          mkdir -p /tmp/notes-workspace
+          tar -xJf /tmp/plqnx-notes.tar.xz -C /tmp/notes-workspace
+          test -f /tmp/notes-workspace/PLQNX_NOTES_V6/app/src/main/java/com/plqnx/notes/LocalMedia.java
+          test -f /tmp/notes-workspace/PLQNX_NOTES_V6/app/src/main/java/com/plqnx/notes/SketchPad.java
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: ''
+      - name: Install Android SDK 36
+        run: |
+          echo "y" | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Compile and verify lint
+        working-directory: /tmp/notes-workspace/PLQNX_NOTES_V6
+        run: gradle --no-daemon --stacktrace assembleDebug bundleRelease lintDebug
+      - name: Inspect APK manifest and signature
+        working-directory: /tmp/notes-workspace/PLQNX_NOTES_V6
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | tee /tmp/plqnx-badging.txt
+          grep -q "name='com.plqnx.notes'" /tmp/plqnx-badging.txt
+          grep -q "versionCode='9'" /tmp/plqnx-badging.txt
+          ! grep -q "android.permission.INTERNET" /tmp/plqnx-badging.txt
+          jarsigner -verify -certs "$APK"
+          unzip -t "$APK" | tail -n 2
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: Plqnx_notes_Adaptive_Keep_Build
+          path: |
+            /tmp/notes-workspace/PLQNX_NOTES_V6/app/build/outputs/apk/debug/*.apk
+            /tmp/notes-workspace/PLQNX_NOTES_V6/app/build/outputs/bundle/release/*.aab
+            /tmp/notes-workspace/PLQNX_NOTES_V6/app/build/reports/lint-results-debug.html
+          if-no-files-found: error
+      - name: Show lint errors
+        if: failure()
+        working-directory: /tmp/notes-workspace/PLQNX_NOTES_V6
+        run: |
+          if [ -f app/build/reports/lint-results-debug.txt ]; then cat app/build/reports/lint-results-debug.txt; fi
