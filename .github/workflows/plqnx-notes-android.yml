@@ -1,4 +1,4 @@
-name: PLQNX Notes Android build
+name: PLQNX Notes Studio 2 Android build
 on:
   push:
     branches: [plqnx-notes-android]
@@ -13,7 +13,7 @@ jobs:
       - name: Decode Android project
         shell: bash
         run: |
-          base64 -d android/PLQNX_NOTES_build_src.tar.xz.b64 > /tmp/plqnx.tar.xz
+          base64 -d android/PLQNX_NOTES_2_src.tar.xz.b64 > /tmp/plqnx.tar.xz
           mkdir -p /tmp/android-src
           tar -xJf /tmp/plqnx.tar.xz -C /tmp/android-src
       - uses: actions/setup-java@v4
@@ -31,14 +31,14 @@ jobs:
         with:
           gradle-version: '8.13'
       - name: Build installable APK and unsigned release bundle
-        working-directory: /tmp/android-src/PLQNX_NOTES
+        working-directory: /tmp/android-src/PLQNX_NOTES_ADVANCED
         run: |
-          gradle --no-daemon --stacktrace assembleDebug bundleRelease
+          gradle --no-daemon --stacktrace assembleDebug bundleRelease lintDebug
       - uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: plqnx-notes-build
+          name: plqnx-notes-studio-2
           path: |
-            /tmp/android-src/PLQNX_NOTES/app/build/outputs/apk/debug/*.apk
-            /tmp/android-src/PLQNX_NOTES/app/build/outputs/bundle/release/*.aab
+            /tmp/android-src/PLQNX_NOTES_ADVANCED/app/build/outputs/apk/debug/*.apk
+            /tmp/android-src/PLQNX_NOTES_ADVANCED/app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
