@@ -1,7 +1,5 @@
 name: PLQNX Notes editor crash reproduction
 on:
-  push:
-    branches: [plqnx-notes-editor-crash-fix]
   workflow_dispatch:
 jobs:
   reproduce-crash:
