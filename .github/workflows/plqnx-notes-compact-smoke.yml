@@ -43,35 +43,12 @@ jobs:
             adb exec-out screencap -p > PLQNX_HOME_360dp.png
             adb shell uiautomator dump /data/local/tmp/plqnx-home.xml
             adb exec-out cat /data/local/tmp/plqnx-home.xml > PLQNX_HOME_UI.xml
-            python3 - <<'PY'
-            import re,subprocess,xml.etree.ElementTree as ET
-            root=ET.parse("PLQNX_HOME_UI.xml").getroot()
-            for n in root.iter("node"):
-                txt=n.attrib.get("text",""); desc=n.attrib.get("content-desc","")
-                if txt or desc: print("HOME UI:",txt[:80],desc[:80],n.attrib.get("bounds",""))
-            matched=[n for n in root.iter("node") if "Write something" in n.attrib.get("text","") or "Write something" in n.attrib.get("content-desc","")]
-            assert matched, "Primary new-note button not found at 360dp / font scale 1.4"
-            b=list(map(int,re.findall(r"\d+",matched[0].attrib["bounds"])))
-            x,y=(b[0]+b[2])//2,(b[1]+b[3])//2
-            print("Tapping create note at",x,y)
-            subprocess.check_call(["adb","shell","input","tap",str(x),str(y)])
-            PY
+            python3 .github/scripts/plqnx_smoke.py tap PLQNX_HOME_UI.xml
             sleep 4
             adb exec-out screencap -p > PLQNX_EDITOR_360dp.png
             adb shell uiautomator dump /data/local/tmp/plqnx-editor.xml
             adb exec-out cat /data/local/tmp/plqnx-editor.xml > PLQNX_EDITOR_UI.xml
-            python3 - <<'PY'
-            import xml.etree.ElementTree as ET
-            root=ET.parse("PLQNX_EDITOR_UI.xml").getroot()
-            tokens=[]
-            for n in root.iter("node"):
-                txt=n.attrib.get("text",""); desc=n.attrib.get("content-desc","")
-                if txt or desc:
-                    tokens.append(txt+" "+desc)
-                    print("EDITOR UI:",txt[:80],desc[:80],n.attrib.get("bounds",""))
-            value=" ".join(tokens)
-            assert "PHOTOS, SKETCHES" in value or "Add photo" in value, "Editor did not appear after + button"
-            PY
+            python3 .github/scripts/plqnx_smoke.py verify PLQNX_EDITOR_UI.xml
             adb logcat -d -s AndroidRuntime:E > PLQNX_ANDROID_CRASH.log
             if grep -q "FATAL EXCEPTION" PLQNX_ANDROID_CRASH.log; then
               cat PLQNX_ANDROID_CRASH.log
