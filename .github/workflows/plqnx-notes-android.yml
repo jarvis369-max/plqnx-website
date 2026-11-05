@@ -34,6 +34,11 @@ jobs:
         working-directory: /tmp/android-src/PLQNX_NOTES_ADVANCED
         run: |
           gradle --no-daemon --stacktrace assembleDebug bundleRelease lintDebug
+      - name: Report Android lint findings
+        if: failure()
+        working-directory: /tmp/android-src/PLQNX_NOTES_ADVANCED
+        run: |
+          if [ -f app/build/reports/lint-results-debug.txt ]; then cat app/build/reports/lint-results-debug.txt; fi
       - uses: actions/upload-artifact@v4
         if: success()
         with:
