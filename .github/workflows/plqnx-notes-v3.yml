@@ -58,3 +58,46 @@ jobs:
         working-directory: /tmp/android-v3-src/PLQNX_NOTES_V3
         run: |
           if [ -f app/build/reports/lint-results-debug.txt ]; then cat app/build/reports/lint-results-debug.txt; fi
+
+  smoke:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/download-artifact@v4
+        with:
+          name: PLQNX_NOTES_Studio_3_v3
+          path: /tmp/plqnx-apk
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          profile: pixel_5
+          script: |
+            set -e
+            APK=$(find /tmp/plqnx-apk -name '*.apk' -print -quit)
+            test -n "$APK"
+            adb install "$APK"
+            adb shell am start -n com.plqnx.notes/.MainActivity
+            sleep 5
+            adb shell pidof com.plqnx.notes
+            adb shell screencap -p /sdcard/plqnx_home.png
+            adb pull /sdcard/plqnx_home.png "$GITHUB_WORKSPACE/PLQNX_V3_home.png"
+            adb shell am start -n com.plqnx.notes/.MainActivity -a com.plqnx.notes.NEW_NOTE
+            sleep 3
+            adb shell pidof com.plqnx.notes
+            adb shell screencap -p /sdcard/plqnx_editor.png
+            adb pull /sdcard/plqnx_editor.png "$GITHUB_WORKSPACE/PLQNX_V3_editor.png"
+      - name: Collect emulator QA screenshots
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: PLQNX_V3_QA_screenshots
+          path: PLQNX_V3_*.png
+          if-no-files-found: warn
