@@ -1,0 +1,62 @@
+name: PLQNX Notes Seasons 3.1 UI smoke test
+on:
+  push:
+    branches: [plqnx-notes-seasons-v31]
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch validated app APK
+        uses: actions/download-artifact@v4
+        with:
+          name: PLQNX_NOTES_Seasons_3_1
+          run-id: 42072386162
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: built
+      - name: Enable hardware virtualization
+        run: |
+          sudo sh -c 'echo KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm" > /etc/udev/rules.d/99-kvm4all.rules'
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Launch PLQNX Notes in Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_6
+          target: google_apis
+          script: |
+            set -euo pipefail
+            adb install built/outputs/apk/debug/app-debug.apk
+            adb shell am start -n com.plqnx.notes/.MainActivity
+            sleep 8
+            adb shell pidof com.plqnx.notes
+            adb shell screencap -p /sdcard/plqnx-home.png
+            adb pull /sdcard/plqnx-home.png PLQNX_HOME.png
+            DIMS=$(adb shell wm size | grep -oE '[0-9]+x[0-9]+' | tail -1)
+            W=${DIMS%x*}
+            H=${DIMS#*x}
+            adb shell input swipe $((W*84/100)) $((H*56/100)) $((W*18/100)) $((H*56/100)) 350
+            sleep 2
+            adb shell screencap -p /sdcard/plqnx-autumn.png
+            adb pull /sdcard/plqnx-autumn.png PLQNX_SEASON_CHANGED.png
+            adb shell input swipe $((W/2)) $((H-365)) $((W/2)) $((H/3)) 400
+            sleep 2
+            adb shell screencap -p /sdcard/plqnx-sheet.png
+            adb pull /sdcard/plqnx-sheet.png PLQNX_NOTES_SHEET.png
+            adb shell pidof com.plqnx.notes
+      - name: Upload UI runtime screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: PLQNX_NOTES_Seasons_UI_Screenshots
+          path: |
+            PLQNX_HOME.png
+            PLQNX_SEASON_CHANGED.png
+            PLQNX_NOTES_SHEET.png
+          if-no-files-found: warn
