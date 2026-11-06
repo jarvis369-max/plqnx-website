@@ -55,22 +55,7 @@ jobs:
             adb exec-out screencap -p > "$GITHUB_WORKSPACE/plqnx-home.png"
             adb shell uiautomator dump /data/local/tmp/hierarchy.xml
             adb shell cat /data/local/tmp/hierarchy.xml > "$GITHUB_WORKSPACE/home.xml"
-            python3 - <<'PY'
-            import xml.etree.ElementTree as ET, re, subprocess
-            root=ET.parse('home.xml').getroot()
-            candidates=[]
-            for n in root.iter('node'):
-                if 'Create new note' in n.get('content-desc','') or n.get('text','').strip() == '＋':
-                    candidates.append(n)
-            if not candidates: raise RuntimeError('New-note button not present in UI hierarchy')
-            b=re.findall(r'\d+',candidates[0].get('bounds',''))
-            if len(b)!=4: raise RuntimeError('Cannot determine + button bounds')
-            x=(int(b[0])+int(b[2]))//2
-            y=(int(b[1])+int(b[3]))//2
-            print('Tapping new-note button', x,y)
-            subprocess.check_call(['adb','logcat','-c'])
-            subprocess.check_call(['adb','shell','input','tap',str(x),str(y)])
-            PY
+            python3 "$GITHUB_WORKSPACE/android/test_open_note.py"
             sleep 5
             adb exec-out screencap -p > "$GITHUB_WORKSPACE/plqnx-editor.png"
             adb shell uiautomator dump /data/local/tmp/editor.xml
