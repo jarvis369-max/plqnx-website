@@ -1,0 +1,72 @@
+name: Plqnx notes polished Android build
+on:
+  push:
+    branches: [plqnx-notes-next-polish]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify Android source archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 -d android/Plqnx_notes_polish_v7_src.tar.xz.b64 > /tmp/plqnx_src.tar.xz
+          xz -t /tmp/plqnx_src.tar.xz
+          mkdir -p /tmp/plqnx_src
+          tar -xJf /tmp/plqnx_src.tar.xz -C /tmp/plqnx_src
+          test -f /tmp/plqnx_src/PLQNX_NOTES_V6/app/src/main/java/com/plqnx/notes/LivingPaper.java
+          test -s /tmp/plqnx_src/PLQNX_NOTES_V6/app/src/main/res/drawable-nodpi/plqnx_mark.png
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: ''
+      - name: Install Android platform and tools
+        run: |
+          echo "y" | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Compile APK, bundle and run lint
+        working-directory: /tmp/plqnx_src/PLQNX_NOTES_V6
+        run: |
+          gradle --no-daemon --stacktrace assembleDebug bundleRelease lintDebug
+      - name: Validate package, version, APK signature
+        shell: bash
+        working-directory: /tmp/plqnx_src/PLQNX_NOTES_V6
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          BUNDLE=app/build/outputs/bundle/release/app-release.aab
+          test -s "$APK"
+          test -s "$BUNDLE"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | tee /tmp/plqnx_badging.txt
+          grep -q "name='com.plqnx.notes'" /tmp/plqnx_badging.txt
+          grep -q "versionCode='10'" /tmp/plqnx_badging.txt
+          grep -q "application-label:'Plqnx notes'" /tmp/plqnx_badging.txt
+          ! grep -q "android.permission.INTERNET" /tmp/plqnx_badging.txt
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK"
+          unzip -t "$APK" | tail -n 2
+      - name: Upload verified Android files
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: plqnx-notes-polished-apk
+          path: |
+            /tmp/plqnx_src/PLQNX_NOTES_V6/app/build/outputs/apk/debug/*.apk
+            /tmp/plqnx_src/PLQNX_NOTES_V6/app/build/outputs/bundle/release/*.aab
+            /tmp/plqnx_src/PLQNX_NOTES_V6/app/build/reports/lint-results-debug.html
+          if-no-files-found: error
+      - name: Show lint report on failure
+        if: failure()
+        working-directory: /tmp/plqnx_src/PLQNX_NOTES_V6
+        run: |
+          if [ -f app/build/reports/lint-results-debug.txt ]; then head -c 12000 app/build/reports/lint-results-debug.txt; fi
