@@ -42,4 +42,26 @@ if 'Attach photo' not in names and 'Record a voice note' not in names:raise Runt
 if not any(n.get('class','').endswith('EditText') for n in nodes):raise RuntimeError('Editor input missing')
 PY
 adb shell pidof com.plqnx.notes >/dev/null
+python3 - <<'PY'
+import xml.etree.ElementTree as ET, re, subprocess
+root=ET.parse('reference-editor.xml').getroot()
+back=[n for n in root.iter('node') if 'Save and return to notes' in (n.get('content-desc') or '')]
+if not back: raise RuntimeError('Editor back button missing')
+bounds=list(map(int,re.findall(r'\\d+',back[0].get('bounds',''))))
+if len(bounds)!=4: raise RuntimeError('Invalid editor back coordinates')
+x=(bounds[0]+bounds[2])//2; y=(bounds[1]+bounds[3])//2
+print('Returning to home',x,y,flush=True)
+subprocess.check_call(['adb','shell','input','tap',str(x),str(y)])
+PY
+sleep 4
+adb exec-out screencap -p > "$GITHUB_WORKSPACE/reference-home-after.png"
+adb shell uiautomator dump /data/local/tmp/plqnx-home-after.xml
+adb shell cat /data/local/tmp/plqnx-home-after.xml > "$GITHUB_WORKSPACE/reference-home-after.xml"
+python3 - <<'PY'
+import xml.etree.ElementTree as ET
+nodes=list(ET.parse('reference-home-after.xml').getroot().iter('node'))
+labels=' '.join((n.get('text') or '')+' '+(n.get('content-desc') or '') for n in nodes)
+if 'Create new note' not in labels or 'Pinned' not in labels: raise RuntimeError('Home navigation not restored')
+print('HOME CHECKED: navigation and category chips visible')
+PY
 echo 'PASS: home, editor, + action, no runtime crash'
