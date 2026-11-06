@@ -1,0 +1,61 @@
+name: Plqnx notes command UI emulator verification
+on:
+  push:
+    branches: [plqnx-notes-command-ui]
+    paths:
+      - 'android/plqnx-command-emulator-test.py'
+      - '.github/workflows/plqnx-command-emulator.yml'
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Plqnx-notes-command-console-test-build
+          run-id: 42233642627
+          github-token: ${{ github.token }}
+          path: /tmp/plqnx-downloaded
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: ''
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Test note editor and adaptive layout on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          disable-animations: true
+          emulator-boot-timeout: 900
+          script: python3 android/plqnx-command-emulator-test.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Plqnx-command-ui-device-screens
+          path: |
+            default-home.png
+            default-editor.png
+            compact-home.png
+            compact-editor.png
+            default-home.xml
+            default-editor.xml
+            compact-home.xml
+            compact-editor.xml
+            default-android-runtime.log
+            compact-android-runtime.log
+          if-no-files-found: warn
