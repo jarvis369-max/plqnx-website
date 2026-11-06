@@ -20,6 +20,8 @@ jobs:
           tar -xJf /tmp/plqnx-command.tar.xz -C /tmp/plqnx-work
           test -s /tmp/plqnx-work/PlqnxNotes/app/build.gradle
           test -s /tmp/plqnx-work/PlqnxNotes/app/src/main/java/com/plqnx/notes/CommandStyle.java
+          sed -i 's/item.setMinHeight(d(62))/item.setMinimumHeight(d(62))/' /tmp/plqnx-work/PlqnxNotes/app/src/main/java/com/plqnx/notes/SignatureHome.java
+          grep -q 'item.setMinimumHeight(d(62))' /tmp/plqnx-work/PlqnxNotes/app/src/main/java/com/plqnx/notes/SignatureHome.java
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
