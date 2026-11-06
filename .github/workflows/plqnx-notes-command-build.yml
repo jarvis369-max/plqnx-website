@@ -22,6 +22,7 @@ jobs:
           test -s /tmp/plqnx-work/PlqnxNotes/app/src/main/java/com/plqnx/notes/CommandStyle.java
           sed -i 's/item.setMinHeight(d(62))/item.setMinimumHeight(d(62))/' /tmp/plqnx-work/PlqnxNotes/app/src/main/java/com/plqnx/notes/SignatureHome.java
           grep -q 'item.setMinimumHeight(d(62))' /tmp/plqnx-work/PlqnxNotes/app/src/main/java/com/plqnx/notes/SignatureHome.java
+          sed -i 's/android.text.Layout.BREAK_STRATEGY_HIGH_QUALITY/android.graphics.text.LineBreaker.BREAK_STRATEGY_HIGH_QUALITY/' /tmp/plqnx-work/PlqnxNotes/app/src/main/java/com/plqnx/notes/SignatureHome.java
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
