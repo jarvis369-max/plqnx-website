@@ -18,7 +18,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: Plqnx-notes-command-console-test-build
-          run-id: 42233642627
+          run-id: 42235947324
           github-token: ${{ github.token }}
           path: /tmp/plqnx-downloaded
       - uses: actions/setup-java@v4
