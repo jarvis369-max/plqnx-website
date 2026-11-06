@@ -1,0 +1,62 @@
+name: Plqnx notes reference-matched Android build
+on:
+  push:
+    branches: [plqnx-notes-reference-redesign]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Decode and validate source archive
+        run: |
+          set -euo pipefail
+          base64 -d android/plqnx-notes-reference-src.tar.xz.b64 > /tmp/plqnx-reference.tar.xz
+          xz -t /tmp/plqnx-reference.tar.xz
+          mkdir -p /tmp/plqnx-reference
+          tar -xJf /tmp/plqnx-reference.tar.xz -C /tmp/plqnx-reference
+          test -s /tmp/plqnx-reference/PlqnxNotes/app/src/main/java/com/plqnx/notes/SignatureHome.java
+          test -s /tmp/plqnx-reference/PlqnxNotes/app/src/main/java/com/plqnx/notes/SignatureViews.java
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: ''
+      - name: Install Android SDK API 36
+        run: |
+          echo "y" | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Compile APK and run Android lint
+        working-directory: /tmp/plqnx-reference/PlqnxNotes
+        run: gradle --no-daemon --stacktrace assembleDebug bundleRelease lintDebug
+      - name: Verify APK
+        working-directory: /tmp/plqnx-reference/PlqnxNotes
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          BUNDLE=app/build/outputs/bundle/release/app-release.aab
+          test -s "$APK" && test -s "$BUNDLE"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | tee /tmp/plqnx-app-info.txt
+          grep -q "name='com.plqnx.notes'" /tmp/plqnx-app-info.txt
+          grep -q "versionCode='11'" /tmp/plqnx-app-info.txt
+          grep -q "application-label:'Plqnx notes'" /tmp/plqnx-app-info.txt
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$APK"
+          unzip -t "$APK" | tail -n 2
+      - name: Upload test build
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: Plqnx-notes-reference-APK
+          path: |
+            /tmp/plqnx-reference/PlqnxNotes/app/build/outputs/apk/debug/*.apk
+            /tmp/plqnx-reference/PlqnxNotes/app/build/outputs/bundle/release/*.aab
+            /tmp/plqnx-reference/PlqnxNotes/app/build/reports/lint-results-debug.html
+          if-no-files-found: error
