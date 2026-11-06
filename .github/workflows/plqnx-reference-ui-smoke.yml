@@ -54,8 +54,10 @@ jobs:
           name: Plqnx-reference-UI-test
           path: |
             reference-home.png
+            reference-home-after.png
             reference-editor.png
             reference-home.xml
+            reference-home-after.xml
             reference-editor.xml
             reference-runtime.log
           if-no-files-found: warn
