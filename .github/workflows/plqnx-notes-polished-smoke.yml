@@ -1,0 +1,94 @@
+name: Plqnx notes UI crash and layout smoke test
+on:
+  push:
+    branches: [plqnx-notes-next-polish]
+  workflow_dispatch:
+jobs:
+  android-emulator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore Android project
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 -d android/Plqnx_notes_polish_v7_src.tar.xz.b64 > /tmp/plqnx.tar.xz
+          mkdir -p /tmp/plqnx-smoke
+          tar -xJf /tmp/plqnx.tar.xz -C /tmp/plqnx-smoke
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: ''
+      - name: Install Android tools
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Build test APK
+        working-directory: /tmp/plqnx-smoke/PLQNX_NOTES_V6
+        run: gradle --no-daemon assembleDebug
+      - name: Enable hardware emulator virtualization
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Launch UI, open new note, check AndroidRuntime and capture screens
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          disable-animations: true
+          emulator-boot-timeout: 900
+          script: |
+            set -eux
+            adb install /tmp/plqnx-smoke/PLQNX_NOTES_V6/app/build/outputs/apk/debug/app-debug.apk
+            adb shell am start -n com.plqnx.notes/.MainActivity
+            sleep 6
+            adb exec-out screencap -p > "$GITHUB_WORKSPACE/plqnx-home.png"
+            adb shell uiautomator dump /data/local/tmp/hierarchy.xml
+            adb shell cat /data/local/tmp/hierarchy.xml > "$GITHUB_WORKSPACE/home.xml"
+            python3 - <<'PY'
+            import xml.etree.ElementTree as ET, re, subprocess
+            root=ET.parse('home.xml').getroot()
+            candidates=[]
+            for n in root.iter('node'):
+                if 'Create new note' in n.get('content-desc','') or n.get('text','').strip() == '＋':
+                    candidates.append(n)
+            if not candidates: raise RuntimeError('New-note button not present in UI hierarchy')
+            b=re.findall(r'\d+',candidates[0].get('bounds',''))
+            if len(b)!=4: raise RuntimeError('Cannot determine + button bounds')
+            x=(int(b[0])+int(b[2]))//2
+            y=(int(b[1])+int(b[3]))//2
+            print('Tapping new-note button', x,y)
+            subprocess.check_call(['adb','logcat','-c'])
+            subprocess.check_call(['adb','shell','input','tap',str(x),str(y)])
+            PY
+            sleep 5
+            adb exec-out screencap -p > "$GITHUB_WORKSPACE/plqnx-editor.png"
+            adb shell uiautomator dump /data/local/tmp/editor.xml
+            adb shell cat /data/local/tmp/editor.xml > "$GITHUB_WORKSPACE/editor.xml"
+            adb logcat -d -s AndroidRuntime:E > "$GITHUB_WORKSPACE/android-runtime.log"
+            cat "$GITHUB_WORKSPACE/android-runtime.log"
+            if grep -q "FATAL EXCEPTION" "$GITHUB_WORKSPACE/android-runtime.log"; then exit 41; fi
+            if ! grep -q "Done" "$GITHUB_WORKSPACE/editor.xml"; then echo "Editor Done button not found"; exit 42; fi
+            adb shell pidof com.plqnx.notes
+      - name: Upload screens and test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: plqnx-notes-ui-smoke-screens
+          path: |
+            plqnx-home.png
+            plqnx-editor.png
+            home.xml
+            editor.xml
+            android-runtime.log
+          if-no-files-found: warn
