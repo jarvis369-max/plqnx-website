@@ -5,7 +5,7 @@ android {
     namespace 'com.plqnx.java'
     compileSdk 35
     defaultConfig {
-        applicationId 'com.plqnx.java'
+        applicationId 'com.plqnx.javadropzone'
         minSdk 24
         targetSdk 34
         versionCode 1
