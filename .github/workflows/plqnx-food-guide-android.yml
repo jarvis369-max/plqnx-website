@@ -1,0 +1,72 @@
+name: PLQNX Food Guide Android build
+on:
+  push:
+    branches: [plqnx-food-guide-android]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore Android source
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 -d android/Plqnx_Food_Guide_Source.tar.xz.b64 > /tmp/food-guide.tar.xz
+          xz -t /tmp/food-guide.tar.xz
+          mkdir -p /tmp/foodapp
+          tar -xJf /tmp/food-guide.tar.xz -C /tmp/foodapp
+          test -s /tmp/foodapp/Plqnx_Food_Guide/app/build.gradle
+          test -s /tmp/foodapp/Plqnx_Food_Guide/app/src/main/assets/index.html
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: ''
+      - name: Install Android SDK 36
+        run: |
+          echo "y" | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Compile APK and run Android lint
+        working-directory: /tmp/foodapp/Plqnx_Food_Guide
+        run: gradle --no-daemon --stacktrace assembleDebug bundleRelease lintDebug
+      - name: Verify package, label, target and APK signature
+        shell: bash
+        working-directory: /tmp/foodapp/Plqnx_Food_Guide
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          BUNDLE=app/build/outputs/bundle/release/app-release.aab
+          test -s "$APK"
+          test -s "$BUNDLE"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | tee /tmp/plqnx-food-guide-info.txt
+          grep -q "name='com.plqnx.foodguide'" /tmp/plqnx-food-guide-info.txt
+          grep -q "versionCode='1'" /tmp/plqnx-food-guide-info.txt
+          grep -q "targetSdkVersion:'36'" /tmp/plqnx-food-guide-info.txt
+          grep -q "application-label:'Plqnx Food Guide'" /tmp/plqnx-food-guide-info.txt
+          ! grep -q "android.permission.INTERNET" /tmp/plqnx-food-guide-info.txt
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK"
+          unzip -t "$APK" | tail -n 2
+      - name: Upload verified APK and logs
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: PLQNX-Food-Guide-Test-APK
+          path: |
+            /tmp/foodapp/Plqnx_Food_Guide/app/build/outputs/apk/debug/*.apk
+            /tmp/foodapp/Plqnx_Food_Guide/app/build/outputs/bundle/release/*.aab
+            /tmp/foodapp/Plqnx_Food_Guide/app/build/reports/lint-results-debug.html
+          if-no-files-found: error
+      - name: Print lint on failure
+        if: failure()
+        working-directory: /tmp/foodapp/Plqnx_Food_Guide
+        run: |
+          if [ -f app/build/reports/lint-results-debug.txt ]; then head -c 12000 app/build/reports/lint-results-debug.txt; fi
