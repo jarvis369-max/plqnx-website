@@ -1,0 +1,67 @@
+name: PLQNX Languages Android UI smoke test
+on:
+  push:
+    branches: [plqnx-languages-android]
+    paths:
+      - 'android/plqnx-languages-emulator-test.py'
+      - '.github/workflows/plqnx-languages-emulator.yml'
+  workflow_dispatch:
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Plqnx-Languages-Test-APK
+          run-id: 44530158976
+          github-token: ${{ github.token }}
+          path: /tmp/plqnx-languages-apk
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: ''
+      - name: Enable Android emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Test lesson navigation and device sizes
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          disable-animations: true
+          emulator-boot-timeout: 900
+          script: python3 android/plqnx-languages-emulator-test.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: PLQNX-Languages-UI-screens
+          path: |
+            onboarding.png
+            home-default.png
+            lesson-default.png
+            feedback-default.png
+            listening-default.png
+            home-compact.png
+            lesson-compact.png
+            onboarding.xml
+            home-default.xml
+            lesson-default.xml
+            feedback-default.xml
+            listening-default.xml
+            home-compact.xml
+            lesson-compact.xml
+            normal-logcat.txt
+            compact-logcat.txt
+          if-no-files-found: warn
