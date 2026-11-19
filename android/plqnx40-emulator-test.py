@@ -43,7 +43,13 @@ adb('shell','input','tap',(b[0]+b[2])//2,(b[1]+b[3])//2)
 adb('shell','input','text','Japanese');time.sleep(1)
 root=dump('language-search');snap('language-search')
 assert find(root,'Japanese') is not None,'Japanese course missing'
-root=tap(root,'Japanese');
+# Pick the actual course row, not the search field that now also reads "Japanese".
+matches=[x for x in root.iter('node') if x.get('text')=='Japanese' and x.get('class')!='android.widget.EditText']
+assert matches,'Japanese language row not found after filtering'
+b=list(map(int,re.findall(r'\\d+',matches[-1].get('bounds',''))))
+assert len(b)==4
+adb('shell','input','tap',(b[0]+b[2])//2,(b[1]+b[3])//2)
+time.sleep(1)
 # Keyboard may still be present; button should remain visible after resize.
 root=dump('selected-Japanese');
 if find(root,'CONTINUE') is None:adb('shell','input','keyevent','4');root=dump('selected-Japanese')
