@@ -1,0 +1,55 @@
+name: PLQNX Food Guide emulator UI test
+on:
+  push:
+    branches: [plqnx-food-guide-android]
+    paths:
+      - 'android/plqnx-food-guide-smoke.py'
+      - '.github/workflows/plqnx-food-guide-emulator.yml'
+  workflow_dispatch:
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: PLQNX-Food-Guide-Test-APK
+          run-id: 44551949961
+          github-token: ${{ github.token }}
+          path: /tmp/food-guide-build
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: ''
+      - name: Enable hardware virtualization
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Test onboarding, home, diary, food search and photo screen
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          emulator-boot-timeout: 900
+          disable-animations: true
+          script: python3 android/plqnx-food-guide-smoke.py
+      - name: Save screenshots and Android errors
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: PLQNX-Food-Guide-Emulator-Screens
+          path: |
+            *.png
+            *.xml
+            android-runtime.log
+          if-no-files-found: warn
