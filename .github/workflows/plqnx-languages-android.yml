@@ -1,0 +1,83 @@
+name: PLQNX Languages Android verified build
+on:
+  push:
+    branches: [plqnx-languages-android]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract and inspect course pack
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 -d android/PLQNX_Languages_Source.tar.xz.b64 > /tmp/plqnx-languages.tar.xz
+          xz -t /tmp/plqnx-languages.tar.xz
+          mkdir -p /tmp/plqnx-app
+          tar -xJf /tmp/plqnx-languages.tar.xz -C /tmp/plqnx-app
+          test -s /tmp/plqnx-app/PlqnxLanguages/app/build.gradle
+          python3 - <<'PY'
+          import json
+          path='/tmp/plqnx-app/PlqnxLanguages/app/src/main/assets/courses.json'
+          j=json.load(open(path))
+          assert len(j['languages']) == 7
+          assert len(j['units']) == 8
+          assert all(len(u['phrases']) == 8 for u in j['units'])
+          for u in j['units']:
+            for l in j['languages']:
+              assert len(set(p[l['id']] for p in u['phrases'])) == 8
+          print("Validated 64 concepts across seven languages")
+          PY
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: ''
+      - name: Install SDK API 36
+        run: |
+          echo "y" | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Build APK, release bundle and lint
+        working-directory: /tmp/plqnx-app/PlqnxLanguages
+        run: gradle --no-daemon --stacktrace assembleDebug bundleRelease lintDebug
+      - name: Verify package, permissions, API and signature
+        shell: bash
+        working-directory: /tmp/plqnx-app/PlqnxLanguages
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          BUNDLE=app/build/outputs/bundle/release/app-release.aab
+          test -s "$APK"
+          test -s "$BUNDLE"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | tee /tmp/plqnx-languages-info.txt
+          grep -q "name='com.plqnx.languages'" /tmp/plqnx-languages-info.txt
+          grep -q "versionCode='1'" /tmp/plqnx-languages-info.txt
+          grep -q "targetSdkVersion:'36'" /tmp/plqnx-languages-info.txt
+          grep -q "application-label:'Plqnx Languages'" /tmp/plqnx-languages-info.txt
+          ! grep -q "android.permission.INTERNET" /tmp/plqnx-languages-info.txt
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK"
+          unzip -t "$APK" | tail -n 2
+      - name: Upload APK and test reports
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Plqnx-Languages-Test-APK
+          path: |
+            /tmp/plqnx-app/PlqnxLanguages/app/build/outputs/apk/debug/*.apk
+            /tmp/plqnx-app/PlqnxLanguages/app/build/outputs/bundle/release/*.aab
+            /tmp/plqnx-app/PlqnxLanguages/app/build/reports/lint-results-debug.html
+          if-no-files-found: error
+      - name: Print lint details on error
+        if: failure()
+        working-directory: /tmp/plqnx-app/PlqnxLanguages
+        run: |
+          if [ -f app/build/reports/lint-results-debug.txt ]; then head -c 12000 app/build/reports/lint-results-debug.txt; fi
