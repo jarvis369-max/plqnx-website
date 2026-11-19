@@ -1,0 +1,72 @@
+name: PLQNX Languages 40 voice Android build
+on:
+  push:
+    branches: [plqnx-languages-40-voice]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract course sources and check 40-language list
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 -d android/PLQNX_Languages_40_Source.tar.xz.b64 > /tmp/plqnx40.tar.xz
+          xz -t /tmp/plqnx40.tar.xz
+          mkdir -p /tmp/plqnx40
+          tar -xJf /tmp/plqnx40.tar.xz -C /tmp/plqnx40
+          test -s /tmp/plqnx40/plqnx_languages_v2/app/build.gradle
+          test -s /tmp/plqnx40/plqnx_languages_v2/app/src/main/java/com/plqnx/languages/CourseData.java
+          grep -q 'COURSE_COUNT=40' /tmp/plqnx40/plqnx_languages_v2/app/src/main/java/com/plqnx/languages/CourseData.java
+          grep -q 'ACTION_INSTALL_TTS_DATA' /tmp/plqnx40/plqnx_languages_v2/app/src/main/java/com/plqnx/languages/MainActivity.java
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: ''
+      - name: Install Android SDK API 36
+        run: |
+          echo "y" | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Compile APK, bundle and lint
+        working-directory: /tmp/plqnx40/plqnx_languages_v2
+        run: gradle --no-daemon --stacktrace assembleDebug bundleRelease lintDebug
+      - name: Inspect APK, version, signing and permissions
+        shell: bash
+        working-directory: /tmp/plqnx40/plqnx_languages_v2
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          test -s app/build/outputs/bundle/release/app-release.aab
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | tee /tmp/plqnx-languages-badging.txt
+          grep -q "name='com.plqnx.languages'" /tmp/plqnx-languages-badging.txt
+          grep -q "versionCode='2'" /tmp/plqnx-languages-badging.txt
+          grep -q "targetSdkVersion:'36'" /tmp/plqnx-languages-badging.txt
+          grep -q "application-label:'Plqnx Languages'" /tmp/plqnx-languages-badging.txt
+          ! grep -q "android.permission.INTERNET" /tmp/plqnx-languages-badging.txt
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK"
+          unzip -t "$APK" | tail -n 2
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: PLQNX-Languages-40-APK
+          path: |
+            /tmp/plqnx40/plqnx_languages_v2/app/build/outputs/apk/debug/*.apk
+            /tmp/plqnx40/plqnx_languages_v2/app/build/outputs/bundle/release/*.aab
+            /tmp/plqnx40/plqnx_languages_v2/app/build/reports/lint-results-debug.html
+          if-no-files-found: error
+      - name: Print build failure excerpt
+        if: failure()
+        working-directory: /tmp/plqnx40/plqnx_languages_v2
+        run: |
+          test ! -f app/build/reports/lint-results-debug.txt || head -c 14000 app/build/reports/lint-results-debug.txt
